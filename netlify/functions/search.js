@@ -2,7 +2,7 @@
 import { getStore } from "@netlify/blobs";
 import Anthropic from "@anthropic-ai/sdk";
 
-const SYSTEM_PROMPT = `You are a nonpartisan educational analyst for "Solutions, Thoughts & Ideas" — a platform helping people understand every side of complex conflicts and policy debates. Present every topic fairly without political bias. Be thorough but concise.`;
+const SYSTEM_PROMPT = `You are a nonpartisan educational analyst for "Solutions, Thoughts & Ideas" — a platform helping people understand every side of complex conflicts and policy debates. Present every topic fairly without political bias. Be thorough but concise. Always use current, up-to-date information including current officeholders and leaders.`;
 
 const USER_PROMPT = (title) => `Analyze: "${title}"
 
@@ -26,11 +26,39 @@ Return ONLY raw JSON (no markdown, no code fences):
   "missingVoices": "Perspectives often left out",
   "powerBrokers": [{"name": "Entity", "description": "Their role"}],
   "gameTheory": "Strategic dynamics paragraph",
-  "keyLeaders": [{"name": "Person", "role": "Title", "stake": "What they want"}],
+  "keyLeaders": [{"name": "Full name of current officeholder", "role": "Their current title", "stake": "What they want and why"}],
   "resolutionPaths": [{"title": "Path name", "description": "How it works"}],
   "historicalPrecedent": "Similar historical situations",
-  "didYouKnow": "One surprising fact about this topic"
-}`;
+  "quickTake": "2-3 sentence accessible summary for someone new to this topic",
+  "pullQuote": "One pithy sentence that captures the core tension",
+  "didYouKnow": "One surprising fact about this topic",
+  "discussionGuide": {
+    "ageNote": "Recommended for ages 14+",
+    "starters": ["Discussion question 1?", "Discussion question 2?", "Discussion question 3?"],
+    "values": "What values are in tension in this debate",
+    "redFlags": "Warning signs of oversimplification or bias to watch for",
+    "activity": "A hands-on activity to deepen understanding"
+  },
+  "organizations": [
+    {"name": "Org name", "what": "What they do", "tag": "Category", "url": "https://example.org"}
+  ],
+  "actions": [
+    {"icon": "emoji", "title": "Action title", "desc": "Brief description", "links": [{"text": "Link text", "url": "https://example.org"}]}
+  ],
+  "sources": [
+    {"id": 1, "text": "What this source covers", "org": "Publisher name", "url": "https://example.org", "date": "${new Date().getFullYear()}"}
+  ]
+}
+
+Important:
+- Use CURRENT officeholders and leaders with their full names (e.g., the actual current US President, not a generic placeholder)
+- Provide 3-5 key leaders, 3-5 sides, 4-6 power brokers, 3-4 resolution paths
+- Provide 3-4 organizations with real, working URLs
+- Provide 3-4 action items with real, working URLs to relevant organizations
+- Provide 5-8 sources from major outlets with real URLs
+- Use emojis for action icons (📖, ✊, 🗳️, 📢, etc.)
+- Assign side colors as "sc1", "sc2", "sc3", "sc4" etc.
+- All information must be current as of ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
 
 function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -113,7 +141,7 @@ export default async function handler(req, context) {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 3500,
+      max_tokens: 5000,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: USER_PROMPT(title) }]
     });
@@ -152,8 +180,13 @@ export default async function handler(req, context) {
       keyLeaders: Array.isArray(parsed.keyLeaders) ? parsed.keyLeaders : [],
       resolutionPaths: Array.isArray(parsed.resolutionPaths) ? parsed.resolutionPaths : [],
       historicalPrecedent: parsed.historicalPrecedent || '',
+      quickTake: parsed.quickTake || '',
+      pullQuote: parsed.pullQuote || '',
       didYouKnow: parsed.didYouKnow || '',
-      sources: parsed.sources || []
+      discussionGuide: parsed.discussionGuide || null,
+      organizations: Array.isArray(parsed.organizations) ? parsed.organizations : [],
+      actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+      sources: Array.isArray(parsed.sources) ? parsed.sources : []
     };
 
     // Cache the result (persists indefinitely)
