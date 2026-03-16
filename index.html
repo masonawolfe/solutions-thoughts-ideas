@@ -475,6 +475,12 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
 </div>
 <script>
 /* ============================================================
+   CURRENT LEADERS — update these when officeholders change
+   ============================================================ */
+const US_PRESIDENT = 'Donald Trump';
+const MEXICAN_PRESIDENT = 'Claudia Sheinbaum';
+
+/* ============================================================
    STATIC DATA
    ============================================================ */
 const CONFLICTS=[
@@ -529,7 +535,7 @@ const STATIC_DATA = {
     keyLeaders:[
       {name:'Benjamin Netanyahu',role:'Prime Minister of Israel',stake:'Faces domestic political and legal pressures that intertwine with wartime decision-making. His political survival is tied to coalition hardliners.'},
       {name:'Yahya Sinwar',role:'Hamas leader (Gaza)',stake:'Architect of the October 2023 attack. Views armed confrontation as leverage for Palestinian demands and Hamas\'s regional relevance.'},
-      {name:'Joe Biden / US President',role:'US Head of State',stake:'Balances strategic alliance with Israel against humanitarian concerns and domestic political pressures from multiple directions.'},
+      {name:US_PRESIDENT + ' / US President',role:'US Head of State',stake:'Balances strategic alliance with Israel against humanitarian concerns and domestic political pressures from multiple directions.'},
       {name:'Ayatollah Khamenei',role:'Supreme Leader of Iran',stake:'Uses the conflict to project regional influence and justify Iran\'s "axis of resistance" strategy against Israel and the US.'},
       {name:'Mohammed bin Salman',role:'Crown Prince of Saudi Arabia',stake:'Normalization with Israel serves economic modernization plans, but popular sentiment limits room for maneuver during active conflict.'},
       {name:'Mahmoud Abbas',role:'President of the Palestinian Authority',stake:'Seeks to reassert PA relevance in post-conflict governance, but faces legitimacy challenges from both Hamas and Palestinian public opinion.'},
@@ -657,7 +663,7 @@ const STATIC_DATA = {
     keyLeaders:[
       {name:'Volodymyr Zelensky',role:'President of Ukraine',stake:'Transformed from political outsider to wartime leader. His personal credibility is central to maintaining Western support and Ukrainian morale.'},
       {name:'Vladimir Putin',role:'President of Russia',stake:'Has staked his legacy and Russia\'s great-power status on the war. Faces the dilemma of escalation risks versus the political cost of acknowledging failure.'},
-      {name:'US President',role:'Leader of Ukraine\'s primary backer',stake:'Balances supporting Ukraine against risks of escalation with a nuclear power, while managing domestic political pressures on spending.'},
+      {name:US_PRESIDENT + ' / US President',role:'Leader of Ukraine\'s primary backer',stake:'Balances supporting Ukraine against risks of escalation with a nuclear power, while managing domestic political pressures on spending.'},
       {name:'Olaf Scholz',role:'Chancellor of Germany',stake:'Leads Europe\'s largest economy through a historic shift from engagement with Russia to security-focused policy. Balances allied solidarity with German economic interests.'},
       {name:'Xi Jinping',role:'President of China',stake:'Uses the conflict to deepen Russia\'s dependence on China while avoiding direct involvement that would trigger Western sanctions.'},
       {name:'Recep Tayyip Erdogan',role:'President of Turkey',stake:'Leverages Turkey\'s unique position as NATO member with Russian ties to mediate, while pursuing Turkish strategic interests in the Black Sea region.'},
@@ -780,10 +786,10 @@ const STATIC_DATA = {
     ],
     gameTheory:"Immigration policy is trapped in a legislative prisoner's dilemma. Both parties benefit electorally from keeping immigration unresolved to motivate their bases, reducing incentives for compromise. Any bipartisan deal risks alienating core supporters.\nThe humanitarian dimension creates additional complexity: enforcement-only approaches face practical and moral limits, while permissive approaches can create pull factors. Finding the equilibrium between deterrence and compassion is the central challenge.",
     keyLeaders:[
-      {name:'US President',role:'Sets executive enforcement priorities',stake:'Immigration enforcement is among the most visible and politically consequential executive powers. Presidents face pressure from all sides.'},
+      {name:US_PRESIDENT + ' / US President',role:'Sets executive enforcement priorities',stake:'Immigration enforcement is among the most visible and politically consequential executive powers. Presidents face pressure from all sides.'},
       {name:'Border state governors',role:'Governors of Texas, Arizona, California, etc.',stake:'Bear the most immediate operational and fiscal impact. Have taken unilateral actions like busing migrants to other states.'},
       {name:'James Lankford / bipartisan negotiators',role:'US Senators leading reform efforts',stake:'Represent the political center attempting compromise. Their failure illustrates the difficulty of bridging partisan divides.'},
-      {name:'Mexican President',role:'Head of state of primary transit country',stake:'Manages the complex relationship between migration enforcement cooperation and Mexican sovereignty concerns.'},
+      {name:MEXICAN_PRESIDENT + ' / Mexican President',role:'Head of state of primary transit country',stake:'Manages the complex relationship between migration enforcement cooperation and Mexican sovereignty concerns.'},
     ],
     resolutionPaths:[
       {title:'Comprehensive legislative reform',description:'A grand bargain combining enhanced border security, expanded legal pathways, modernized visa systems, and a pathway to legal status for long-term undocumented residents.'},
@@ -844,7 +850,7 @@ const STATIC_DATA = {
     gameTheory:"Climate policy presents the classic tragedy of the commons. Each nation benefits from emissions while costs are shared globally, creating free-rider incentives. The Paris Agreement attempts to address this through mutual accountability.\nThere is also a first-mover dilemma: countries investing heavily in clean energy risk short-term disadvantage, but may gain long-term competitive advantages in the growing clean energy sector. This shifts the calculus from sacrifice to industrial opportunity.",
     keyLeaders:[
       {name:'Xi Jinping',role:'President of China',stake:'China\'s net-zero-by-2060 pledge is critical. Balancing emissions reduction with economic growth and energy security for 1.4 billion people.'},
-      {name:'US President',role:'Leader of largest cumulative emitter',stake:'US climate policy swings dramatically between administrations, creating uncertainty for domestic industry and international agreements.'},
+      {name:US_PRESIDENT + ' / US President',role:'Leader of largest cumulative emitter',stake:'US climate policy swings dramatically between administrations, creating uncertainty for domestic industry and international agreements.'},
       {name:'Ursula von der Leyen',role:'President of the European Commission',stake:'Drives the EU Green Deal, the world\'s most ambitious climate legislative package. Balances green ambition with industrial competitiveness.'},
       {name:'Narendra Modi',role:'Prime Minister of India',stake:'Leads the world\'s most populous nation, balancing development needs against climate commitments and renewable energy expansion.'},
       {name:'Sultan Al Jaber',role:'COP28 President / ADNOC CEO',stake:'Represents the tension between fossil fuel-producing nations and climate action. His dual role highlights the complexity of transition.'},
@@ -970,7 +976,7 @@ const STATIC_DATA = {
     gameTheory:"US-Iran relations are trapped in a classic security dilemma. Each side's defensive measures are perceived as offensive threats, driving escalation spirals. Iran's nuclear program, framed as defensive, is perceived as an existential offensive threat. US deployments, framed as defensive, are perceived as encirclement.\nDomestic politics on both sides reinforce hardline positions. In Iran, hardliners use American hostility to justify repression. In the US, concessions carry significant political costs. This creates a ratchet where tensions can escalate but are very difficult to de-escalate.",
     keyLeaders:[
       {name:'Ayatollah Khamenei',role:'Supreme Leader of Iran',stake:'Controls ultimate authority in Iran. His views on the US, nuclear policy, and regional strategy set the boundaries for all Iranian policy.'},
-      {name:'US President',role:'Commander-in-chief',stake:'Navigates between diplomatic engagement and deterrence while managing Congressional opposition to any perceived concessions.'},
+      {name:US_PRESIDENT + ' / US President',role:'Commander-in-chief',stake:'Navigates between diplomatic engagement and deterrence while managing Congressional opposition to any perceived concessions.'},
       {name:'IRGC Quds Force commander',role:'Iran\'s external operations chief',stake:'Manages Iran\'s network of proxy forces. This role shapes the day-to-day dynamics of regional confrontation.'},
       {name:'Mohammad Javad Zarif / Iranian FM',role:'Iran\'s diplomatic face',stake:'Represents the possibility of diplomatic engagement but is constrained by hardliners who view negotiations with suspicion.'},
       {name:'Israeli Prime Minister',role:'Leader of Iran\'s primary regional adversary',stake:'Israeli intelligence and military actions against Iran\'s nuclear program shape the pace of escalation.'},
