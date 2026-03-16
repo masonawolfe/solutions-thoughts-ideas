@@ -1357,19 +1357,21 @@ renderGrid();
 renderDYK();
 fetchTrending(); // Load trending topics on startup
 
-// Pre-warm featured topics in background (fetches from API cache, populates browser cache)
-(async function preWarm(){
-  for(const c of CONFLICTS){
-    const ckey=ck(c.title);
-    if(cache[ckey])continue; // Already in browser memory
-    try{
-      const res=await fetch(API_BASE+'/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:c.title})});
-      if(res.ok){const data=await res.json();if(data.title)cache[ckey]=data;}
-    }catch(e){/* silent — topics load on click anyway */}
-  }
-  // Re-render DYK after pre-warm populates cache with didYouKnow fields
-  renderDYK();
-})();
+// Pre-warm featured topics once per session (avoids burning function invocations on every page load)
+if(!sessionStorage.getItem('sti-warmed')){
+  sessionStorage.setItem('sti-warmed','1');
+  (async function preWarm(){
+    for(const c of CONFLICTS){
+      const ckey=ck(c.title);
+      if(cache[ckey])continue;
+      try{
+        const res=await fetch(API_BASE+'/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:c.title})});
+        if(res.ok){const data=await res.json();if(data.title)cache[ckey]=data;}
+      }catch(e){/* silent */}
+    }
+    renderDYK();
+  })();
+}
 
 // Live news fetcher
 async function fetchNews(topic) {
