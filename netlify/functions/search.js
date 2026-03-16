@@ -1,6 +1,5 @@
 // Search function: AI-powered topic analysis with caching + trending tracking
 import { getStore } from "@netlify/blobs";
-import Anthropic from "@anthropic-ai/sdk";
 
 const SYSTEM_PROMPT = `You are a nonpartisan educational analyst. Present every topic fairly without bias. Use current officeholders' full names. Return ONLY raw JSON.`;
 
@@ -10,6 +9,28 @@ Give 3-4 sides, 4-6 power brokers, 3-5 key leaders (FULL NAMES of current office
 
 function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function callClaude(apiKey, title) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: USER_PROMPT(title) }]
+    })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Claude API error ${res.status}: ${err}`);
+  }
+  return res.json();
 }
 
 export default async function handler(req, context) {
@@ -61,14 +82,7 @@ export default async function handler(req, context) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500 });
     }
 
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: USER_PROMPT(title) }]
-    });
-
+    const message = await callClaude(apiKey, title);
     const raw = message.content.map(b => b.text || '').join('');
     let clean = raw.replace(/```json|```/g, '').trim();
     const fi = clean.indexOf('{'), li = clean.lastIndexOf('}');
