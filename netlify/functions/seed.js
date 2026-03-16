@@ -1,6 +1,5 @@
-// Seed function: pre-generate featured topics by calling the search endpoint
+// Seed function: pre-generate featured topics by calling search endpoint
 // Hit /.netlify/functions/seed?key=<SEED_KEY> to generate all 8 featured topics
-import { getStore } from "@netlify/blobs";
 
 const FEATURED_TOPICS = [
   'Israel & Hamas',
@@ -13,15 +12,10 @@ const FEATURED_TOPICS = [
   'US-Iran tensions'
 ];
 
-function cacheKey(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
 export default async function handler(req, context) {
-  // Simple auth check
   const url = new URL(req.url);
   const key = url.searchParams.get('key');
-  const seedKey = process.env.SEED_KEY || process.env.ANTHROPIC_API_KEY?.slice(-8);
+  const seedKey = process.env.SEED_KEY || (process.env.ANTHROPIC_API_KEY || '').slice(-8);
 
   if (!key || key !== seedKey) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -30,30 +24,13 @@ export default async function handler(req, context) {
     });
   }
 
-  // Optional: regenerate even if cached
   const force = url.searchParams.get('force') === 'true';
-
-  const cache = getStore("analysis-cache");
+  const siteUrl = process.env.URL || 'https://solutionsthoughtsideas.com';
   const results = [];
 
   for (const title of FEATURED_TOPICS) {
-    const ck = cacheKey(title);
-
-    // Skip if already cached (unless force)
-    if (!force) {
-      try {
-        const existing = await cache.get(ck, { type: "json" });
-        if (existing) {
-          results.push({ title, status: 'cached', key: ck });
-          continue;
-        }
-      } catch (e) { /* not cached */ }
-    }
-
-    // Call the search function internally
     try {
-      const origin = url.origin;
-      const res = await fetch(`${origin}/.netlify/functions/search`, {
+      const res = await fetch(`${siteUrl}/.netlify/functions/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
@@ -61,13 +38,13 @@ export default async function handler(req, context) {
 
       if (res.ok) {
         const data = await res.json();
-        results.push({ title, status: 'generated', key: ck, hasData: !!data.title });
+        results.push({ title, status: data._cached ? 'cached' : 'generated', hasData: !!data.title });
       } else {
         const err = await res.text();
-        results.push({ title, status: 'error', key: ck, error: err });
+        results.push({ title, status: 'error', error: err.slice(0, 200) });
       }
     } catch (e) {
-      results.push({ title, status: 'error', key: ck, error: e.message });
+      results.push({ title, status: 'error', error: e.message });
     }
   }
 
