@@ -46,9 +46,13 @@ export default async function handler(req) {
     const cache = getStore("analysis-cache");
     const trending = getStore("trending");
 
-    // Check cache
+    // Check cache — expire after 7 days so analyses stay current
+    const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     let cached = null;
     try { cached = await cache.get(key, { type: "json" }); } catch (e) {}
+    if (cached && cached._cachedAt && (Date.now() - cached._cachedAt > CACHE_TTL_MS)) {
+      cached = null; // stale — regenerate
+    }
 
     // Track in trending
     try {
@@ -100,7 +104,7 @@ export default async function handler(req) {
       actions: p.actions || [], sources: p.sources || []
     };
 
-    try { await cache.setJSON(key, result); } catch (e) {}
+    try { await cache.setJSON(key, { ...result, _cachedAt: Date.now() }); } catch (e) {}
 
     return new Response(JSON.stringify(result), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
