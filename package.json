@@ -1,0 +1,13 @@
+{
+  "name": "solutions-thoughts-ideas",
+  "version": "2.0.0",
+  "description": "Understand every side of complex conflicts and policy debates",
+  "scripts": {
+    "build": "echo 'Static site - no build needed'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@netlify/blobs": "^8.1.0",
+    "node-fetch": "^3.3.2"
+  }
+}

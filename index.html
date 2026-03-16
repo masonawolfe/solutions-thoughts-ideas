@@ -92,6 +92,27 @@ a.skipnav:focus{left:8px;}
 .sensnote{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:7px;margin-top:10px;font-size:.72rem;color:rgba(255,255,255,.65);line-height:1.5;}
 .sensnote svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;opacity:.6;}
 
+/* ===== Grid tabs ===== */
+.grid-tabs{display:flex;gap:4px;margin-bottom:12px;}
+.grid-tab{padding:6px 16px;border-radius:20px;border:1px solid var(--rule2);background:var(--card);font-family:var(--bd);font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.grid-tab:hover{border-color:var(--navy);color:var(--navy);}
+.grid-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.trend-count{display:inline-block;padding:0 6px;border-radius:10px;background:rgba(255,255,255,.2);font-size:.68rem;margin-left:4px;}
+.grid-tab.active .trend-count{background:rgba(255,255,255,.25);}
+
+/* ===== News section ===== */
+.news-section{background:var(--card);border-radius:8px;margin-bottom:12px;border:1px solid var(--rule);padding:1rem 1.1rem;margin-top:6px;}
+.news-hdr{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.news-loading{font-size:.76rem;color:var(--faint);padding:8px 0;}
+.news-empty{font-size:.76rem;color:var(--faint);}
+.news-item{display:block;padding:8px 0;border-bottom:1px solid var(--rule);text-decoration:none;transition:background .15s;}
+.news-item:last-child{border-bottom:none;}
+.news-item:hover{background:var(--surf);border-radius:4px;padding-left:6px;}
+.news-meta{display:flex;gap:8px;align-items:center;margin-bottom:2px;}
+.news-source{font-size:.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;}
+.news-time{font-size:.62rem;color:var(--faint);}
+.news-title{font-size:.82rem;color:var(--ink);line-height:1.4;}
+
 /* ===== Sections ===== */
 .asec{background:var(--card);border-radius:8px;margin-bottom:12px;border:1px solid var(--rule);overflow:hidden;}
 .ash{padding:.88rem 1.1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .15s;}
@@ -437,7 +458,8 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
       <button id="sbtn" onclick="doSearch()">Analyze →</button>
     </div>
     <span class="hint" id="hint" aria-live="polite"></span>
-    <div class="slbl">Featured conflicts &amp; issues</div>
+    <div class="slbl" id="grid-label">Featured conflicts &amp; issues</div>
+    <div id="grid-tabs-container"></div>
     <div class="cgrid" id="cgrid"></div>
   <div id="dyk" class="tidbit-feed"></div>
   </div>
@@ -983,6 +1005,9 @@ let busy=false, ctrl=null, fromSrch=false, curTitle='';
 const cache={};
 const sectionState={};
 let apiKey='';
+const API_BASE = '/.netlify/functions';
+let trendingTopics = [];
+let homepageMode = 'featured';
 
 // Theme
 function getThemePref(){try{return localStorage.getItem('sti_theme')}catch(e){return null}}
@@ -1153,16 +1178,70 @@ function onSI(){
 }
 
 function renderGrid(){
-  const hl={high:'High intensity',med:'Medium intensity',low:'Lower intensity'};
-  document.getElementById('cgrid').innerHTML=CONFLICTS.map(c=>`
-    <div class="cc2" tabindex="0" role="button" aria-label="Analyze ${eh(c.title)}"
-      onclick="go('${c.id}','${eh(c.title)}',false)"
-      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${c.id}','${eh(c.title)}',false);}">
-      <div class="hrow"><div class="hrowl"><div class="hdot h${c.h}"></div><span class="htxt">${hl[c.h]}</span></div><span class="rdtime">${c.rd} min read</span></div>
-      <h3>${eh(c.title)}</h3>
-      <p>${eh(c.s)}</p>
-      <div class="ctags">${c.t.map(t=>`<span class="ctag${t==='Wedge Issue'?' ctag-w':''}">${t}</span>`).join('')}</div>
-    </div>`).join('');
+  const hl={high:'High intensity',med:'Medium intensity',medium:'Medium intensity',low:'Lower intensity'};
+  const hmap={high:'h',med:'h',medium:'m',low:'l'};
+
+  // Build toggle tabs
+  const trendCount = trendingTopics.length;
+  let tabsHtml = '';
+  if(trendCount > 0) {
+    tabsHtml = `<div class="grid-tabs">
+      <button class="grid-tab ${homepageMode==='featured'?'active':''}" onclick="homepageMode='featured';renderGrid();">Featured</button>
+      <button class="grid-tab ${homepageMode==='trending'?'active':''}" onclick="homepageMode='trending';renderGrid();">Trending <span class="trend-count">${trendCount}</span></button>
+    </div>`;
+  }
+
+  let cardsHtml = '';
+  if(homepageMode === 'featured' || trendCount === 0) {
+    cardsHtml = CONFLICTS.map(c=>`
+      <div class="cc2" tabindex="0" role="button" aria-label="Analyze ${eh(c.title)}"
+        onclick="go('${c.id}','${eh(c.title)}',false)"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${c.id}','${eh(c.title)}',false);}">
+        <div class="hrow"><div class="hrowl"><div class="hdot h${c.h}"></div><span class="htxt">${hl[c.h]}</span></div><span class="rdtime">${c.rd} min read</span></div>
+        <h3>${eh(c.title)}</h3>
+        <p>${eh(c.s)}</p>
+        <div class="ctags">${c.t.map(t=>`<span class="ctag${t==='Wedge Issue'?' ctag-w':''}">${t}</span>`).join('')}</div>
+      </div>`).join('');
+  } else {
+    cardsHtml = trendingTopics.map(t=>{
+      const hc = hmap[t.intensity] || 'm';
+      const tags = (t.tags||[]).slice(0,3);
+      return `<div class="cc2" tabindex="0" role="button" aria-label="Analyze ${eh(t.title)}"
+        onclick="go(null,'${eh(t.title)}',false)"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go(null,'${eh(t.title)}',false);}">
+        <div class="hrow"><div class="hrowl"><div class="hdot h${hc}"></div><span class="htxt">${hl[t.intensity]||'Medium intensity'}</span></div><span class="rdtime">${t.readTime||7} min read</span></div>
+        <h3>${eh(t.title)}</h3>
+        <p>${eh(t.summary||'')}</p>
+        <div class="ctags">${tags.map(tg=>`<span class="ctag${tg==='Wedge Issue'?' ctag-w':''}">${tg}</span>`).join('')}
+          <span class="ctag" style="background:var(--teal-l);color:var(--teal);">${t.count} searches</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const gridEl = document.getElementById('cgrid');
+  // Insert tabs before grid if not already present
+  let tabContainer = document.getElementById('grid-tabs-container');
+  if(!tabContainer) {
+    tabContainer = document.createElement('div');
+    tabContainer.id = 'grid-tabs-container';
+    gridEl.parentElement.insertBefore(tabContainer, gridEl);
+  }
+  tabContainer.innerHTML = tabsHtml;
+  gridEl.innerHTML = cardsHtml;
+}
+
+// Fetch trending topics from backend
+async function fetchTrending(){
+  try {
+    const res = await fetch(API_BASE + '/trending');
+    if(!res.ok) return;
+    const data = await res.json();
+    trendingTopics = (data.topics || []).filter(t => t.count >= 2); // Only show topics searched 2+ times
+    renderGrid();
+  } catch(e) {
+    console.log('Trending fetch skipped:', e.message);
+  }
 }
 
 /* ============================================================
@@ -1268,41 +1347,27 @@ async function go(id,title,fs){
   }
   if(staticMatch){cache[ckey]=staticMatch;renderDetail(staticMatch,title);window.scrollTo(0,0);return;}
 
-  // Custom search needs API key
-  if(!apiKey){
-    document.getElementById('dc').innerHTML=
-      '<div class="nc"><strong>Custom search requires an API key.</strong> The eight featured topics work instantly. To analyze custom topics, add your Anthropic API key.</div>'+
-      '<button class="retry" style="margin-top:8px;" onclick="openApiKeyModal()">Add API key</button>'+
-      '<div style="margin-top:12px;"><button class="back" onclick="goHome()">← Browse featured topics</button></div>';
-    return;
-  }
-
-  document.getElementById('dc').innerHTML=`<div class="loading"><div class="spin"></div><p>Analyzing "${eh(title)}"...</p></div>`;
+  // Use server-side API (no client key needed!)
+  document.getElementById('dc').innerHTML=`<div class="loading"><div class="spin"></div><p>Analyzing "${eh(title)}"...</p><p style="font-size:.72rem;color:var(--faint);margin-top:8px;">Searching for balanced perspectives...</p></div>`;
   window.scrollTo(0,0);
   busy=true;document.getElementById('sbtn').disabled=true;
   if(ctrl)ctrl.abort();ctrl=new AbortController();
-  const timer=setTimeout(()=>ctrl.abort(),30000);
+  const timer=setTimeout(()=>ctrl.abort(),45000);
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch(API_BASE+'/search',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json'},
       signal:ctrl.signal,
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,
-        system:'You are a nonpartisan educational analyst. Present every topic fairly without political bias.',
-        messages:[{role:'user',content:'Analyze: "'+title+'"\n\nReturn ONLY raw JSON:\n{"isValidTopic":true,"invalidReason":"","title":"","isWedge":false,"intensity":"high","region":"","sensitivity":"","keyDates":[{"date":"","event":""}],"situation":"para1\\npara2","sides":[{"name":"","coreBeliefs":"","keyFigures":"","c":"sc1"}],"importantDistinction":"","missingVoices":"","powerBrokers":[{"name":"","description":""}],"gameTheory":"para1\\npara2","keyLeaders":[{"name":"","role":"","stake":""}],"resolutionPaths":[{"title":"","description":""}],"historicalPrecedent":""}'}]
-      })
+      body:JSON.stringify({title})
     });
     clearTimeout(timer);
-    const data=await res.json();
-    if(data.error)throw new Error(data.error.message||'API error');
-    const raw=(data.content||[]).map(b=>b.text||'').join('');
-    let clean=raw.replace(/```json|```/g,'').trim();
-    const fi=clean.indexOf('{'),li=clean.lastIndexOf('}');
-    if(fi>=0&&li>=0)clean=clean.slice(fi,li+1);
-    const p=JSON.parse(clean);
+    const p=await res.json();
+    if(p.error)throw new Error(p.error);
     if(p.isValidTopic===false){document.getElementById('dc').innerHTML='<div class="nc"><strong>Not a recognized conflict topic.</strong> '+eh(p.invalidReason||'Please search for a specific geopolitical conflict or policy debate.')+'</div>';return;}
-    const safe={title:p.title||title,isWedge:!!p.isWedge,intensity:p.intensity||'medium',region:p.region||'',sensitivity:p.sensitivity||null,keyDates:Array.isArray(p.keyDates)?p.keyDates:[],situation:p.situation||'',sides:Array.isArray(p.sides)?p.sides:[],importantDistinction:p.importantDistinction||'',missingVoices:p.missingVoices||'',powerBrokers:Array.isArray(p.powerBrokers)?p.powerBrokers:[],gameTheory:p.gameTheory||'',keyLeaders:Array.isArray(p.keyLeaders)?p.keyLeaders:[],resolutionPaths:Array.isArray(p.resolutionPaths)?p.resolutionPaths:[],historicalPrecedent:p.historicalPrecedent||''};
+    const safe={title:p.title||title,isWedge:!!p.isWedge,intensity:p.intensity||'medium',region:p.region||'',sensitivity:p.sensitivity||null,lastVerified:p.lastVerified||'',keyDates:Array.isArray(p.keyDates)?p.keyDates:[],situation:p.situation||'',sides:Array.isArray(p.sides)?p.sides:[],importantDistinction:p.importantDistinction||'',missingVoices:p.missingVoices||'',powerBrokers:Array.isArray(p.powerBrokers)?p.powerBrokers:[],gameTheory:p.gameTheory||'',keyLeaders:Array.isArray(p.keyLeaders)?p.keyLeaders:[],resolutionPaths:Array.isArray(p.resolutionPaths)?p.resolutionPaths:[],historicalPrecedent:p.historicalPrecedent||'',sources:p.sources||[],didYouKnow:p.didYouKnow||''};
     cache[ckey]=safe;renderDetail(safe,title);
+    // Refresh trending in background (new search may have changed rankings)
+    fetchTrending();
   }catch(e){
     clearTimeout(timer);
     const isTO=e.name==='AbortError';
@@ -1437,6 +1502,9 @@ function renderDetail(d,st){
       h+=sec('07','Sources &amp; references',srcHtml,false,d.title);
     }
 
+    // Live news section
+    h+='<div class="news-section" id="news-section"><div class="news-hdr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Latest news on this topic</div><div class="news-loading" id="news-feed">Loading latest headlines...</div></div>';
+
     // Comments
     h+=buildCS(ck(d.title), d.sides||[]);
 
@@ -1446,6 +1514,8 @@ function renderDetail(d,st){
     dc.innerHTML=h;
     // Initialize TOC after rendering
     setTimeout(()=>initTOC(),50);
+    // Fetch live news
+    fetchNews(d.title);
   }catch(e){dc.innerHTML='<div class="err"><strong>Render error:</strong> '+eh(e.message)+'</div>';}
 }
 
@@ -1806,6 +1876,30 @@ function setupTOCObserver(){
 renderAuthBar();
 renderGrid();
 renderDYK();
+fetchTrending(); // Load trending topics on startup
+
+// Live news fetcher
+async function fetchNews(topic) {
+  const feed = document.getElementById('news-feed');
+  if(!feed) return;
+  try {
+    const res = await fetch(API_BASE + '/news?topic=' + encodeURIComponent(topic));
+    if(!res.ok) throw new Error('News unavailable');
+    const data = await res.json();
+    if(!data.articles || data.articles.length === 0) {
+      feed.innerHTML = '<p class="news-empty">No recent headlines found for this topic.</p>';
+      return;
+    }
+    feed.innerHTML = data.articles.map(a => `
+      <a class="news-item" href="${eh(a.link)}" target="_blank" rel="noopener">
+        <div class="news-meta"><span class="news-source">${eh(a.source)}</span><span class="news-time">${eh(a.timeAgo)}</span></div>
+        <div class="news-title">${eh(a.title)}</div>
+      </a>
+    `).join('');
+  } catch(e) {
+    feed.innerHTML = '<p class="news-empty">Could not load news. <button class="retry" onclick="fetchNews(\'' + eh(topic) + '\')">Retry</button></p>';
+  }
+}
 </script>
 </body>
 </html>
