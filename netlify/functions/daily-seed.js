@@ -1,0 +1,185 @@
+// Daily cron: seed new topics from headlines + refresh stale trending analyses
+import { getStore } from "@netlify/blobs";
+
+const YEAR = new Date().getFullYear();
+const DATE = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+const ANALYSIS_PROMPT = (title) => `You are a nonpartisan analyst. Analyze "${title}" as of ${DATE}. Use FULL NAMES of current officeholders. Return ONLY raw JSON (no markdown):
+{"isValidTopic":true,"invalidReason":"","title":"","isWedge":false,"intensity":"high","region":"","sensitivity":null,"summary":"","tags":[],"readTime":7,"lastVerified":"${DATE}","keyDates":[{"date":"","event":""}],"situation":"","sides":[{"name":"","coreBeliefs":"","keyFigures":"","c":"sc1"}],"importantDistinction":"","missingVoices":"","powerBrokers":[{"name":"","description":""}],"gameTheory":"","keyLeaders":[{"name":"","role":"","stake":""}],"resolutionPaths":[{"title":"","description":""}],"historicalPrecedent":"","quickTake":"","pullQuote":"","didYouKnow":"","discussionGuide":{"ageNote":"Ages 14+","starters":[],"values":"","redFlags":"","activity":""},"organizations":[{"name":"","what":"","tag":"","url":""}],"actions":[{"icon":"","title":"","desc":"","links":[{"text":"","url":""}]}],"sources":[{"id":1,"text":"","org":"","url":"","date":"${YEAR}"}]}
+Requirements: 3 sides, 4 power brokers, 4 key leaders with FULL NAMES, 3 resolution paths, 3 organizations with URLs, 3 actions with emoji icons and URLs, 5 sources. Be concise.`;
+
+const EXTRACT_PROMPT = (headlines) => `From these news headlines, extract 3-5 major conflict or policy debate topics suitable for balanced multi-perspective analysis. Only pick substantive geopolitical conflicts or policy debates, not celebrity news or sports. Return ONLY a JSON array of short topic titles (2-5 words each):
+${headlines}`;
+
+function cacheKey(title) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function callClaude(apiKey, messages, maxTokens = 2048) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      messages
+    })
+  });
+  if (!res.ok) throw new Error(`Claude API ${res.status}`);
+  const data = await res.json();
+  return data.content.map(b => b.text || '').join('');
+}
+
+async function fetchHeadlines() {
+  const res = await fetch('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
+  if (!res.ok) return '';
+  const xml = await res.text();
+  const titles = [];
+  const re = /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const t = (m[1] || m[2] || '').trim();
+    if (t && t !== 'Google News') titles.push(t);
+  }
+  return titles.slice(0, 20).join('\n');
+}
+
+async function generateAnalysis(apiKey, title) {
+  const raw = await callClaude(apiKey, [{ role: 'user', content: ANALYSIS_PROMPT(title) }]);
+  let clean = raw.replace(/```json|```/g, '').trim();
+  const fi = clean.indexOf('{'), li = clean.lastIndexOf('}');
+  if (fi >= 0 && li >= 0) clean = clean.slice(fi, li + 1);
+  const p = JSON.parse(clean);
+  if (p.isValidTopic === false) return null;
+  return {
+    title: p.title || title, isWedge: !!p.isWedge, intensity: p.intensity || 'medium',
+    region: p.region || '', sensitivity: p.sensitivity || null, summary: p.summary || '',
+    tags: p.tags || [], readTime: p.readTime || 7, lastVerified: p.lastVerified || '',
+    keyDates: p.keyDates || [], situation: p.situation || '', sides: p.sides || [],
+    importantDistinction: p.importantDistinction || '', missingVoices: p.missingVoices || '',
+    powerBrokers: p.powerBrokers || [], gameTheory: p.gameTheory || '',
+    keyLeaders: p.keyLeaders || [], resolutionPaths: p.resolutionPaths || [],
+    historicalPrecedent: p.historicalPrecedent || '', quickTake: p.quickTake || '',
+    pullQuote: p.pullQuote || '', didYouKnow: p.didYouKnow || '',
+    discussionGuide: p.discussionGuide || null, organizations: p.organizations || [],
+    actions: p.actions || [], sources: p.sources || []
+  };
+}
+
+export default async function handler(req) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return new Response(JSON.stringify({ error: 'No API key' }), { status: 500 });
+
+  const cache = getStore("analysis-cache");
+  const trending = getStore("trending");
+  const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const log = [];
+
+  // --- PART 1: Seed new topics from headlines ---
+  try {
+    const headlines = await fetchHeadlines();
+    if (headlines) {
+      const raw = await callClaude(apiKey, [{ role: 'user', content: EXTRACT_PROMPT(headlines) }], 256);
+      let clean = raw.replace(/```json|```/g, '').trim();
+      const fi = clean.indexOf('['), li = clean.lastIndexOf(']');
+      if (fi >= 0 && li >= 0) clean = clean.slice(fi, li + 1);
+      const topics = JSON.parse(clean);
+
+      for (const title of topics.slice(0, 5)) {
+        if (typeof title !== 'string' || title.length < 3) continue;
+        const key = cacheKey(title);
+
+        // Skip if already cached and fresh
+        let existing = null;
+        try { existing = await cache.get(key, { type: "json" }); } catch (e) {}
+        if (existing && existing._cachedAt && (Date.now() - existing._cachedAt < CACHE_TTL_MS)) {
+          log.push(`skip-fresh: ${title}`);
+          continue;
+        }
+
+        try {
+          const result = await generateAnalysis(apiKey, title);
+          if (result) {
+            await cache.setJSON(key, { ...result, _cachedAt: Date.now() });
+            // Seed trending entry so it appears
+            const now = Date.now();
+            let td = null;
+            try { td = await trending.get(key, { type: "json" }); } catch (e) {}
+            if (td) {
+              td.count += 1; td.lastSearched = now;
+              td.recentSearches = [...(td.recentSearches || []), now].filter(t => now - t < 30 * 24 * 60 * 60 * 1000).slice(-1000);
+            } else {
+              td = { title, count: 2, firstSearched: now, lastSearched: now, recentSearches: [now, now] };
+            }
+            await trending.setJSON(key, td);
+            log.push(`seeded: ${title}`);
+          }
+        } catch (e) {
+          log.push(`seed-error: ${title} - ${e.message}`);
+        }
+      }
+    }
+  } catch (e) {
+    log.push(`headlines-error: ${e.message}`);
+  }
+
+  // --- PART 2: Refresh stale trending topics ---
+  try {
+    // Get trending entries by listing the store
+    const trendList = await trending.list();
+    const now = Date.now();
+    const scored = [];
+
+    for (const { key } of trendList.blobs) {
+      try {
+        const td = await trending.get(key, { type: "json" });
+        if (!td || td.count < 2) continue;
+        const searches = (td.recentSearches || []).filter(t => now - t < 30 * 24 * 60 * 60 * 1000);
+        let score = 0;
+        searches.forEach(t => {
+          const age = now - t;
+          if (age < 24 * 60 * 60 * 1000) score += 10;
+          else if (age < 7 * 24 * 60 * 60 * 1000) score += 3;
+          else score += 1;
+        });
+        score += Math.log2(td.count + 1) * 2;
+        scored.push({ key, title: td.title, score });
+      } catch (e) {}
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    const top20 = scored.slice(0, 20);
+
+    for (const { key, title } of top20) {
+      let existing = null;
+      try { existing = await cache.get(key, { type: "json" }); } catch (e) {}
+      if (existing && existing._cachedAt && (Date.now() - existing._cachedAt < CACHE_TTL_MS)) {
+        continue; // still fresh
+      }
+
+      try {
+        const result = await generateAnalysis(apiKey, title);
+        if (result) {
+          await cache.setJSON(key, { ...result, _cachedAt: Date.now() });
+          log.push(`refreshed: ${title}`);
+        }
+      } catch (e) {
+        log.push(`refresh-error: ${title} - ${e.message}`);
+      }
+    }
+  } catch (e) {
+    log.push(`trending-refresh-error: ${e.message}`);
+  }
+
+  return new Response(JSON.stringify({ ok: true, log, timestamp: new Date().toISOString() }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+export const config = {
+  schedule: "0 8 * * *" // Run daily at 8 AM UTC
+};
