@@ -12,6 +12,35 @@ function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// Basic content filter — blocks slurs, explicit content, and nonsense
+const BLOCKED_PATTERNS = [
+  /\b(fuck|shit|ass|bitch|cunt|dick|cock|pussy|nigger|faggot|retard|whore|slut)\b/i,
+  /\b(porn|hentai|xxx|nude|naked|nsfw)\b/i,
+  /(.)\1{5,}/, // repeated chars like "aaaaaaa"
+  /^[^a-zA-Z]*$/, // no letters at all
+];
+
+function isBlockedInput(title) {
+  return BLOCKED_PATTERNS.some(p => p.test(title));
+}
+
+// In-memory rate limiter (per function instance — resets on cold start, good enough for basic protection)
+const rateLimits = new Map();
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX = 5;
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateLimits.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    rateLimits.set(ip, { windowStart: now, count: 1 });
+    return false;
+  }
+  entry.count++;
+  if (entry.count > RATE_MAX) return true;
+  return false;
+}
+
 async function callClaude(apiKey, title) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -39,8 +68,22 @@ export default async function handler(req) {
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
 
   try {
+    // Rate limit by IP
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('client-ip') || 'unknown';
+    if (isRateLimited(ip)) {
+      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute.' }), {
+        status: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     const { title } = await req.json();
     if (!title || title.length < 3) return new Response(JSON.stringify({ error: 'Title too short' }), { status: 400 });
+    if (title.length > 200) return new Response(JSON.stringify({ error: 'Title too long' }), { status: 400 });
+    if (isBlockedInput(title)) {
+      return new Response(JSON.stringify({ isValidTopic: false, invalidReason: 'Please search for a real conflict or policy topic.' }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     const key = cacheKey(title);
     const cache = getStore("analysis-cache");
