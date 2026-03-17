@@ -89,12 +89,14 @@ export default async function handler(req) {
     const cache = getStore("analysis-cache");
     const trending = getStore("trending");
 
-    // Check cache — expire after 7 days so analyses stay current
+    // Check cache — expire after 7 days, or if missing timestamp (pre-TTL), or if empty content
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     let cached = null;
     try { cached = await cache.get(key, { type: "json" }); } catch (e) {}
-    if (cached && cached._cachedAt && (Date.now() - cached._cachedAt > CACHE_TTL_MS)) {
-      cached = null; // stale — regenerate
+    if (cached) {
+      const isStale = !cached._cachedAt || (Date.now() - cached._cachedAt > CACHE_TTL_MS);
+      const isEmpty = !cached.situation && (!cached.sides || cached.sides.length === 0);
+      if (isStale || isEmpty) cached = null; // regenerate
     }
 
     // Track in trending
