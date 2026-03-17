@@ -26,7 +26,7 @@ function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-async function callClaude(apiKey, messages, maxTokens = 4096) {
+async function callClaude(apiKey, messages, maxTokens = 8192) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
