@@ -51,7 +51,7 @@ async function callClaude(apiKey, title) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: USER_PROMPT(title) }]
     })
   });
