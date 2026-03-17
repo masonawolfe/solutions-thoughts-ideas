@@ -2,11 +2,56 @@
 import { getStore } from "@netlify/blobs";
 
 const YEAR = new Date().getFullYear();
-const DATE = new Date().toLocaleDateString('en-US', {month:'long',year:'numeric'});
+const DATE = new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
 
-const USER_PROMPT = (title) => `You are a nonpartisan analyst. Analyze "${title}" as of ${DATE}. Use FULL NAMES of current officeholders. Return ONLY raw JSON (no markdown):
+const USER_PROMPT = (title, worldContext) => `You are a nonpartisan analyst. Analyze "${title}" as of ${DATE}.
+
+CURRENT WORLD CONTEXT (use this as ground truth for current facts — do NOT contradict it):
+${worldContext}
+
+Return ONLY raw JSON (no markdown):
 {"isValidTopic":true,"invalidReason":"","title":"","isWedge":false,"intensity":"high","region":"","sensitivity":null,"summary":"","tags":[],"readTime":7,"lastVerified":"${DATE}","keyDates":[{"date":"","event":""}],"situation":"","sides":[{"name":"","coreBeliefs":"","keyFigures":"","c":"sc1"}],"importantDistinction":"","missingVoices":"","powerBrokers":[{"name":"","description":""}],"gameTheory":"","keyLeaders":[{"name":"","role":"","stake":""}],"resolutionPaths":[{"title":"","description":""}],"historicalPrecedent":"","quickTake":"","pullQuote":"","didYouKnow":"","discussionGuide":{"ageNote":"Ages 14+","starters":[],"values":"","redFlags":"","activity":""},"organizations":[{"name":"","what":"","tag":"","url":""}],"actions":[{"icon":"","title":"","desc":"","links":[{"text":"","url":""}]}],"sources":[{"id":1,"text":"","org":"","url":"","date":"${YEAR}"}]}
 Requirements: 3 sides, 4 power brokers, 4 key leaders with FULL NAMES, 3 resolution paths, 3 organizations with URLs, 3 actions with emoji icons and URLs, 5 sources. Be concise.`;
+
+async function fetchTopicHeadlines(topic) {
+  try {
+    const query = encodeURIComponent(topic);
+    const res = await fetch(`https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`, {
+      headers: { 'User-Agent': 'SolutionsThoughtsIdeas/2.0' }
+    });
+    if (!res.ok) return '';
+    const xml = await res.text();
+    const titles = [];
+    const re = /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null) {
+      const t = (m[1] || m[2] || '').trim();
+      if (t && t !== 'Google News') titles.push(t);
+    }
+    return titles.slice(0, 8).join('\n');
+  } catch (e) { return ''; }
+}
+
+async function buildContext(contextStore, topic) {
+  let worldState = '';
+  try {
+    const ctx = await contextStore.get('current-context', { type: 'json' });
+    if (ctx) {
+      worldState = `As of ${ctx.asOf}:\n`;
+      worldState += `Heads of State: ${(ctx.headsOfState || []).map(h => `${h.leader} (${h.title}, ${h.country})`).join('; ')}\n`;
+      worldState += `Active Conflicts: ${(ctx.activeConflicts || []).join('; ')}\n`;
+      worldState += `Recent Events: ${(ctx.recentEvents || []).join('; ')}\n`;
+      worldState += `Policy Changes: ${(ctx.majorPolicyChanges || []).join('; ')}`;
+    }
+  } catch (e) {}
+
+  const topicHeadlines = await fetchTopicHeadlines(topic);
+  if (topicHeadlines) {
+    worldState += `\n\nLatest headlines about "${topic}":\n${topicHeadlines}`;
+  }
+
+  return worldState || `Today is ${DATE}. Use your most current knowledge.`;
+}
 
 function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -41,7 +86,7 @@ function isRateLimited(ip) {
   return false;
 }
 
-async function callClaude(apiKey, title) {
+async function callClaude(apiKey, title, worldContext) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -52,7 +97,7 @@ async function callClaude(apiKey, title) {
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
-      messages: [{ role: 'user', content: USER_PROMPT(title) }]
+      messages: [{ role: 'user', content: USER_PROMPT(title, worldContext) }]
     })
   });
   if (!res.ok) throw new Error(`Claude API ${res.status}`);
@@ -122,7 +167,11 @@ export default async function handler(req) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500 });
 
-    const msg = await callClaude(apiKey, title);
+    // Build current world context: world-state blob + topic-specific headlines
+    const contextStore = getStore("context");
+    const worldContext = await buildContext(contextStore, title);
+
+    const msg = await callClaude(apiKey, title, worldContext);
     const raw = msg.content.map(b => b.text || '').join('');
     let clean = raw.replace(/```json|```/g, '').trim();
     const fi = clean.indexOf('{'), li = clean.lastIndexOf('}');

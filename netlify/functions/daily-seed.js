@@ -1,10 +1,21 @@
-// Daily cron: seed new topics from headlines + refresh stale trending analyses
+// Daily cron: seed new topics from headlines + refresh stale trending analyses + maintain world-state context
 import { getStore } from "@netlify/blobs";
 
 const YEAR = new Date().getFullYear();
-const DATE = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-const ANALYSIS_PROMPT = (title) => `You are a nonpartisan analyst. Analyze "${title}" as of ${DATE}. Use FULL NAMES of current officeholders. Return ONLY raw JSON (no markdown):
+const WORLD_STATE_PROMPT = (headlines) => `Based on these current news headlines from ${DATE}, extract key current world facts. Return ONLY raw JSON (no markdown):
+{"asOf":"${DATE}","headsOfState":[{"country":"","leader":"","title":""}],"activeConflicts":[""],"recentEvents":[""],"majorPolicyChanges":[""]}
+Include: US president, UK PM, French president, German chancellor, Russian president, Chinese president, Ukrainian president, Iranian supreme leader, Israeli PM, and any other relevant leaders mentioned in headlines. List 5-10 active conflicts and 5-10 recent major events/policy changes. Be factual and concise.
+Headlines:
+${headlines}`;
+
+const ANALYSIS_PROMPT = (title, worldContext) => `You are a nonpartisan analyst. Analyze "${title}" as of ${DATE}.
+
+CURRENT WORLD CONTEXT (use this as ground truth for current facts — do NOT contradict it):
+${worldContext}
+
+Return ONLY raw JSON (no markdown):
 {"isValidTopic":true,"invalidReason":"","title":"","isWedge":false,"intensity":"high","region":"","sensitivity":null,"summary":"","tags":[],"readTime":7,"lastVerified":"${DATE}","keyDates":[{"date":"","event":""}],"situation":"","sides":[{"name":"","coreBeliefs":"","keyFigures":"","c":"sc1"}],"importantDistinction":"","missingVoices":"","powerBrokers":[{"name":"","description":""}],"gameTheory":"","keyLeaders":[{"name":"","role":"","stake":""}],"resolutionPaths":[{"title":"","description":""}],"historicalPrecedent":"","quickTake":"","pullQuote":"","didYouKnow":"","discussionGuide":{"ageNote":"Ages 14+","starters":[],"values":"","redFlags":"","activity":""},"organizations":[{"name":"","what":"","tag":"","url":""}],"actions":[{"icon":"","title":"","desc":"","links":[{"text":"","url":""}]}],"sources":[{"id":1,"text":"","org":"","url":"","date":"${YEAR}"}]}
 Requirements: 3 sides, 4 power brokers, 4 key leaders with FULL NAMES, 3 resolution paths, 3 organizations with URLs, 3 actions with emoji icons and URLs, 5 sources. Be concise.`;
 
@@ -48,8 +59,49 @@ async function fetchHeadlines() {
   return titles.slice(0, 20).join('\n');
 }
 
-async function generateAnalysis(apiKey, title) {
-  const raw = await callClaude(apiKey, [{ role: 'user', content: ANALYSIS_PROMPT(title) }]);
+async function fetchTopicHeadlines(topic) {
+  try {
+    const query = encodeURIComponent(topic);
+    const res = await fetch(`https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`, {
+      headers: { 'User-Agent': 'SolutionsThoughtsIdeas/2.0' }
+    });
+    if (!res.ok) return '';
+    const xml = await res.text();
+    const titles = [];
+    const re = /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null) {
+      const t = (m[1] || m[2] || '').trim();
+      if (t && t !== 'Google News') titles.push(t);
+    }
+    return titles.slice(0, 8).join('\n');
+  } catch (e) { return ''; }
+}
+
+async function buildWorldContext(contextStore, topic) {
+  let worldState = '';
+  try {
+    const ctx = await contextStore.get('current-context', { type: 'json' });
+    if (ctx) {
+      worldState = `As of ${ctx.asOf}:\n`;
+      worldState += `Heads of State: ${(ctx.headsOfState || []).map(h => `${h.leader} (${h.title}, ${h.country})`).join('; ')}\n`;
+      worldState += `Active Conflicts: ${(ctx.activeConflicts || []).join('; ')}\n`;
+      worldState += `Recent Events: ${(ctx.recentEvents || []).join('; ')}\n`;
+      worldState += `Policy Changes: ${(ctx.majorPolicyChanges || []).join('; ')}`;
+    }
+  } catch (e) {}
+
+  const topicHeadlines = await fetchTopicHeadlines(topic);
+  if (topicHeadlines) {
+    worldState += `\n\nLatest headlines about "${topic}":\n${topicHeadlines}`;
+  }
+
+  return worldState || `Today is ${DATE}. Use your most current knowledge.`;
+}
+
+async function generateAnalysis(apiKey, title, contextStore) {
+  const worldContext = await buildWorldContext(contextStore, title);
+  const raw = await callClaude(apiKey, [{ role: 'user', content: ANALYSIS_PROMPT(title, worldContext) }]);
   let clean = raw.replace(/```json|```/g, '').trim();
   const fi = clean.indexOf('{'), li = clean.lastIndexOf('}');
   if (fi >= 0 && li >= 0) clean = clean.slice(fi, li + 1);
@@ -76,12 +128,30 @@ export default async function handler(req) {
 
   const cache = getStore("analysis-cache");
   const trending = getStore("trending");
+  const contextStore = getStore("context");
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const log = [];
 
+  // --- PART 0: Refresh world-state context from today's headlines ---
+  let headlines = '';
+  try {
+    headlines = await fetchHeadlines();
+    if (headlines) {
+      const wsRaw = await callClaude(apiKey, [{ role: 'user', content: WORLD_STATE_PROMPT(headlines) }], 1024);
+      let wsClean = wsRaw.replace(/```json|```/g, '').trim();
+      const wsFi = wsClean.indexOf('{'), wsLi = wsClean.lastIndexOf('}');
+      if (wsFi >= 0 && wsLi >= 0) wsClean = wsClean.slice(wsFi, wsLi + 1);
+      const worldState = JSON.parse(wsClean);
+      worldState._updatedAt = Date.now();
+      await contextStore.setJSON('current-context', worldState);
+      log.push(`world-state: updated with ${(worldState.headsOfState || []).length} leaders, ${(worldState.activeConflicts || []).length} conflicts`);
+    }
+  } catch (e) {
+    log.push(`world-state-error: ${e.message}`);
+  }
+
   // --- PART 1: Seed new topics from headlines ---
   try {
-    const headlines = await fetchHeadlines();
     if (headlines) {
       const raw = await callClaude(apiKey, [{ role: 'user', content: EXTRACT_PROMPT(headlines) }], 256);
       let clean = raw.replace(/```json|```/g, '').trim();
@@ -102,7 +172,7 @@ export default async function handler(req) {
         }
 
         try {
-          const result = await generateAnalysis(apiKey, title);
+          const result = await generateAnalysis(apiKey, title, contextStore);
           if (result) {
             await cache.setJSON(key, { ...result, _cachedAt: Date.now() });
             // Seed trending entry so it appears
@@ -162,7 +232,7 @@ export default async function handler(req) {
       }
 
       try {
-        const result = await generateAnalysis(apiKey, title);
+        const result = await generateAnalysis(apiKey, title, contextStore);
         if (result) {
           await cache.setJSON(key, { ...result, _cachedAt: Date.now() });
           log.push(`refreshed: ${title}`);
