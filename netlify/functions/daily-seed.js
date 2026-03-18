@@ -158,7 +158,7 @@ export default async function handler(req) {
   // --- PART 1: Seed new topics from headlines ---
   try {
     if (headlines) {
-      const raw = await callClaude(apiKey, [{ role: 'user', content: EXTRACT_PROMPT(headlines) }], 256);
+      const raw = await callClaude(apiKey, [{ role: 'user', content: EXTRACT_PROMPT(headlines) }], 1024);
       let clean = raw.replace(/```json|```/g, '').trim();
       const fi = clean.indexOf('['), li = clean.lastIndexOf(']');
       if (fi >= 0 && li >= 0) clean = clean.slice(fi, li + 1);
