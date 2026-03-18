@@ -67,7 +67,7 @@ a.skipnav:focus{left:8px;}
 .hdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
 .htxt{font-size:.68rem;color:var(--muted);}
 .rdtime{font-size:.6rem;color:var(--faint);}
-.hh{background:var(--rust);}.hm{background:var(--gold);}.hl{background:var(--sage);}
+.hc{background:#c0392b;}.hh{background:var(--rust);}.hm{background:var(--gold);}.hl{background:var(--sage);}
 .cc2 h3{font-family:var(--dp);font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:4px;line-height:1.2;}
 .cc2 p{font-size:.76rem;color:var(--muted);line-height:1.5;}
 .ctags{margin-top:7px;display:flex;flex-wrap:wrap;gap:3px;}
@@ -661,8 +661,8 @@ function onSI(){
 }
 
 function renderGrid(){
-  const hl={high:'High intensity',med:'Medium intensity',medium:'Medium intensity',low:'Lower intensity'};
-  const hmap={high:'h',med:'h',medium:'m',low:'l'};
+  const hl={critical:'Critical intensity',high:'High intensity',med:'Medium intensity',medium:'Medium intensity',low:'Lower intensity'};
+  const hmap={critical:'c',high:'h',med:'h',medium:'m',low:'l'};
 
   // Build toggle tabs
   const trendCount = trendingTopics.length;
@@ -883,8 +883,8 @@ function renderDetail(d,st){
   curTitle=d.title;
   const dc=document.getElementById('dc');
   try{
-    const ic=d.intensity==='high'?'var(--rust)':d.intensity==='medium'?'var(--gold)':'var(--sage)';
-    const il=d.intensity==='high'?'High intensity':d.intensity==='medium'?'Medium intensity':'Lower intensity';
+    const ic=d.intensity==='critical'?'#c0392b':d.intensity==='high'?'var(--rust)':d.intensity==='medium'?'var(--gold)':'var(--sage)';
+    const il=d.intensity==='critical'?'Critical intensity':d.intensity==='high'?'High intensity':d.intensity==='medium'?'Medium intensity':'Lower intensity';
     const scm=['sc1','sc2','sc3','sc4'];
 
     // Masthead
@@ -1017,7 +1017,7 @@ function renderDetail(d,st){
     // Initialize TOC after rendering
     setTimeout(()=>initTOC(),50);
     // Fetch live news
-    fetchNews(d.title);
+    fetchNews(st || d.title); // Use short search term for better RSS results
   }catch(e){dc.innerHTML='<div class="err"><strong>Render error:</strong> '+eh(e.message)+'</div>';}
 }
 
