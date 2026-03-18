@@ -478,6 +478,7 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
    FEATURED TOPICS (card metadata only — full analysis loaded from API)
    ============================================================ */
 let featuredTopics = []; // populated dynamically from /featured endpoint
+let featuredTidbits = []; // didYouKnow facts from featured topics
 
 /* ============================================================
    STATE
@@ -732,6 +733,7 @@ async function fetchFeatured(){
       const parsed = JSON.parse(cached);
       if(parsed.topics && parsed.topics.length > 0) {
         featuredTopics = parsed.topics;
+        featuredTidbits = parsed.tidbits || [];
         renderGrid();
       }
     }
@@ -744,8 +746,10 @@ async function fetchFeatured(){
     const data = await res.json();
     if(data.topics && data.topics.length > 0) {
       featuredTopics = data.topics;
+      featuredTidbits = data.tidbits || [];
       localStorage.setItem('sti-featured', JSON.stringify(data));
       renderGrid();
+      renderDYK();
     }
   } catch(e) {
     console.log('Featured fetch skipped:', e.message);
@@ -777,14 +781,15 @@ async function fetchTrending(){
 let tidbitIdx=0;
 function renderDYK(){
   const container=document.getElementById('dyk');
-  // Collect all tidbits
+  // Collect all tidbits from featured data + any cached API responses
   const tidbits=[];
-  // Pull didYouKnow from any cached API responses
+  // Featured tidbits (from seed-featured endpoint)
+  featuredTidbits.forEach(t=>tidbits.push(t));
+  // Also pull didYouKnow from any cached API responses in this session
   for(const key in cache){
     const d=cache[key];
     if(d&&d.didYouKnow)tidbits.push({topic:d.title||key,text:d.didYouKnow});
   }
-  // Tidbits are now fully dynamic from API responses
   // Shuffle
   for(let i=tidbits.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tidbits[i],tidbits[j]]=[tidbits[j],tidbits[i]];}
 

@@ -2,8 +2,6 @@
 // Lightweight — no Claude calls, just reads existing blobs
 import { getStore } from "@netlify/blobs";
 
-const MIN_FEATURED = 8;
-
 export default async function handler(req) {
   try {
     const cache = getStore("analysis-cache");
@@ -12,6 +10,7 @@ export default async function handler(req) {
 
     const now = Date.now();
     const candidates = [];
+    const tidbits = [];
 
     // Pull all trending topics and score them
     const trendList = await trending.list();
@@ -42,27 +41,38 @@ export default async function handler(req) {
       try {
         const cached = await cache.get(t.key, { type: "json" });
         if (cached && cached.situation) {
+          // Use the SHORT trending title (original search term), not the long AI-generated title
+          const shortTitle = t.title;
+          // Keep summary under 100 chars for card display
+          let summary = cached.summary || '';
+          if (summary.length > 120) summary = summary.slice(0, 117) + '...';
+
           candidates.push({
             key: t.key,
-            title: cached.title || t.title,
+            title: shortTitle,
             intensity: cached.intensity || 'medium',
-            summary: cached.summary || '',
-            tags: cached.tags || [],
-            readTime: cached.readTime || 7,
-            score: t.score
+            summary,
+            tags: (cached.tags || []).slice(0, 3),
+            readTime: cached.readTime || 7
           });
+
+          // Collect didYouKnow for tidbits
+          if (cached.didYouKnow) {
+            tidbits.push({ topic: shortTitle, text: cached.didYouKnow });
+          }
         }
       } catch (e) {}
     }
 
-    // Save featured list
+    // Save featured list with tidbits
     const data = {
       topics: candidates.slice(0, 12),
+      tidbits: tidbits.slice(0, 24),
       updatedAt: new Date().toISOString()
     };
     await featured.setJSON('featured-list', data);
 
-    return new Response(JSON.stringify({ ok: true, count: candidates.length, topics: candidates.map(c => c.title) }), {
+    return new Response(JSON.stringify({ ok: true, count: candidates.length, tidbitsCount: tidbits.length, topics: candidates.map(c => c.title) }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   } catch (e) {
