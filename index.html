@@ -284,7 +284,32 @@ a.skipnav:focus{left:8px;}
   #dview{display:block!important;}
 }
 
-@media(max-width:420px){.abar{flex-direction:column;}.ab{justify-content:center;}.splats{grid-template-columns:1fr;}.kldr-grid{grid-template-columns:1fr;}}
+@media(max-width:420px){
+  #app{padding:0 1rem 4rem;}
+  .abar{flex-direction:column;}.ab{justify-content:center;}
+  .splats{grid-template-columns:1fr;}
+  .kldr-grid{grid-template-columns:1fr;}
+  .cgrid{grid-template-columns:1fr;}
+  .sgrid{grid-template-columns:1fr;}
+  .action-grid{grid-template-columns:1fr;}
+  .org-grid{grid-template-columns:1fr;}
+  .export-grid{grid-template-columns:1fr;}
+  .tidbit-card{flex:0 0 220px;}
+  /* Touch targets minimum 44px */
+  .authbtn{padding:10px 16px;min-height:44px;}
+  .grid-tab{padding:10px 18px;min-height:44px;}
+  .back{padding:8px 0;min-height:44px;display:inline-flex;align-items:center;}
+  .retry{padding:8px 14px;min-height:44px;}
+  .tidbit-nav-btn{width:44px;height:44px;}
+  .theme-toggle{width:44px;height:44px;}
+  .ab{padding:10px 14px;min-height:44px;}
+  .splat{padding:12px 14px;min-height:44px;}
+  /* Slightly larger fonts for small screens */
+  .asn{font-size:.7rem;}
+  .news-time{font-size:.7rem;}
+  .news-title a{word-break:break-word;}
+  .modal{padding:1.2rem;max-width:calc(100vw - 2rem);}
+}
 /* Quick Take */
 .qtake{background:var(--card);border-radius:8px;padding:1.1rem 1.3rem;margin-bottom:.9rem;border:1px solid var(--rule);border-left:3px solid var(--teal);}
 .qtake-lbl{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:5px;}
