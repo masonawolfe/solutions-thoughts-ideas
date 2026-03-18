@@ -56,9 +56,11 @@ export default async function handler(req) {
             readTime: cached.readTime || 7
           });
 
-          // Collect didYouKnow for tidbits
+          // Collect didYouKnow for tidbits (cap at 140 chars for card display)
           if (cached.didYouKnow) {
-            tidbits.push({ topic: shortTitle, text: cached.didYouKnow });
+            let dyk = cached.didYouKnow;
+            if (dyk.length > 140) dyk = dyk.slice(0, 137) + '...';
+            tidbits.push({ topic: shortTitle, text: dyk });
           }
         }
       } catch (e) {}
