@@ -3,7 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solutions, Thoughts & Ideas</title>
+<title>Solutions, Thoughts & Ideas — Understand Every Side</title>
+<meta name="description" content="AI-powered nonpartisan analysis of complex conflicts and policy debates. Explore every perspective with balanced research, live news, and community-driven trending topics.">
+<meta name="keywords" content="conflict analysis, nonpartisan, policy debate, geopolitics, balanced analysis, multiple perspectives">
+<meta name="author" content="Mason Wolfe">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Solutions, Thoughts & Ideas — Understand Every Side">
+<meta property="og:description" content="AI-powered nonpartisan analysis of complex conflicts and policy debates. Explore every perspective.">
+<meta property="og:url" content="https://solutionsthoughtsideas.com">
+<meta property="og:site_name" content="Solutions, Thoughts & Ideas">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Solutions, Thoughts & Ideas">
+<meta name="twitter:description" content="Understand every side of every conflict. AI-powered nonpartisan analysis.">
+<!-- Structured Data -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Solutions, Thoughts & Ideas","url":"https://solutionsthoughtsideas.com","description":"AI-powered nonpartisan analysis of complex conflicts and policy debates","applicationCategory":"Reference","author":{"@type":"Person","name":"Mason Wolfe"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<link rel="canonical" href="https://solutionsthoughtsideas.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -469,15 +487,15 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
 <a class="skipnav" href="#main-content">Skip to content</a>
 <div id="app">
   <div id="ovlayer"></div>
-  <div class="hdr">
+  <header class="hdr" role="banner">
     <h1 onclick="location.hash='';renderGrid()" style="cursor:pointer">Solutions, Thoughts &amp; Ideas</h1>
     <div class="sub">Understanding every side of every conflict</div>
     <div class="hbar"></div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
-  </div>
+  </header>
   <div class="authbar" id="authbar"></div>
-  <div id="hview">
-    <div class="sw">
+  <main id="hview" role="main">
+    <div class="sw" role="search">
       <input type="text" id="si" maxlength="200" placeholder="Search any conflict, policy, or global issue…" oninput="onSI()" aria-label="Search conflicts" />
       <span class="cc" id="cc"></span>
       <button id="sbtn" onclick="doSearch()">Analyze →</button>
@@ -487,7 +505,7 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
     <div id="grid-tabs-container"></div>
     <div class="cgrid" id="cgrid"></div>
   <div id="dyk" class="tidbit-feed"></div>
-  </div>
+  </main>
   <div id="dview" style="display:none;" id="main-content">
     <button class="back" id="bbtn" onclick="goHome()">← All conflicts</button>
     <nav class="toc" id="toc" role="navigation" aria-label="Table of contents"></nav>
@@ -897,7 +915,8 @@ async function go(id,title,fs){
   }catch(e){
     clearTimeout(timer);if(window._stageTimer)clearInterval(window._stageTimer);
     const isTO=e.name==='AbortError';
-    document.getElementById('dc').innerHTML='<div class="err"><strong>'+(isTO?'Request timed out.':'Analysis failed: '+eh(e.message))+'</strong> <button class="retry" onclick="go('+(id?'\''+eh(id)+'\'':'null')+',\''+eh(title)+'\','+fs+')">Retry</button></div>';
+    const errMsg=isTO?'This is taking longer than expected. The servers may be busy — please try again.':'Something went wrong loading this analysis. This could be a temporary issue.';
+    document.getElementById('dc').innerHTML='<div class="err" style="text-align:center;padding:2rem 1rem;"><div style="font-size:1.5rem;margin-bottom:.8rem;">😕</div><strong style="font-size:.95rem;">'+errMsg+'</strong><p style="font-size:.78rem;color:var(--faint);margin:.6rem 0;">'+(isTO?'':'Error: '+eh(e.message))+'</p><div style="display:flex;gap:8px;justify-content:center;margin-top:1rem;"><button class="retry" style="padding:10px 20px;min-height:44px;" onclick="go('+(id?'\''+eh(id)+'\'':'null')+',\''+eh(title).replace(/'/g,"\\'")+'\','+fs+')">Try again</button><button class="retry" style="padding:10px 20px;min-height:44px;background:var(--surf);color:var(--ink);border:1px solid var(--rule);" onclick="goHome()">Back to topics</button></div></div>';
   }finally{busy=false;document.getElementById('sbtn').disabled=false;}
 }
 
@@ -1112,7 +1131,7 @@ function buildCS(ckey, sides){
     form='<div class="cauth-gate"><p>Join the discussion — sign up or sign in to comment.<br>Verified accounts help keep this space thoughtful and spam-free.</p><button class="authbtn" onclick="openSignUp()">Sign up to comment</button></div>';
   }
 
-  return '<div class="csec" id="csec_'+ckey+'"><div class="chd"><h4>Discussion</h4>'+pdots+'<span class="ccnt" id="ccnt_'+ckey+'">'+list.length+' comment'+(list.length!==1?'s':'')+'</span></div>'+guidelines+form+'<div id="cl_'+ckey+'">'+(list.length?'<div class="clist">'+list.map((c,i)=>buildCI(c,i,ckey)).join('')+'</div>':'<div class="noc">No comments yet. Be the first to share your perspective.</div>')+'</div></div>';
+  return '<div class="csec" id="csec_'+ckey+'"><div class="chd"><h4>Discussion</h4><span style="font-size:.7rem;background:var(--teal);color:#fff;padding:2px 8px;border-radius:10px;margin-left:8px;">Coming soon</span></div><div style="padding:1rem;font-size:.85rem;color:var(--faint);line-height:1.6;"><p style="margin:0;">Community discussion is on the way. Soon you\'ll be able to share perspectives, represent underheard viewpoints, and engage in structured dialogue across all sides of every topic.</p></div></div>';
 }
 
 function buildCI(c,i,ckey){
