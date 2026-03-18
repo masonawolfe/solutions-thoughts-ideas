@@ -723,14 +723,30 @@ function renderGrid(){
   gridEl.innerHTML = cardsHtml;
 }
 
-// Fetch featured topics from backend
+// Fetch featured topics from backend (with localStorage fallback for instant load)
 async function fetchFeatured(){
+  // Show cached featured topics instantly while fresh ones load
+  try {
+    const cached = localStorage.getItem('sti-featured');
+    if(cached) {
+      const parsed = JSON.parse(cached);
+      if(parsed.topics && parsed.topics.length > 0) {
+        featuredTopics = parsed.topics;
+        renderGrid();
+      }
+    }
+  } catch(e) {}
+
+  // Fetch fresh featured topics
   try {
     const res = await fetch(API_BASE + '/featured');
     if(!res.ok) return;
     const data = await res.json();
-    featuredTopics = (data.topics || []);
-    renderGrid();
+    if(data.topics && data.topics.length > 0) {
+      featuredTopics = data.topics;
+      localStorage.setItem('sti-featured', JSON.stringify(data));
+      renderGrid();
+    }
   } catch(e) {
     console.log('Featured fetch skipped:', e.message);
   }
