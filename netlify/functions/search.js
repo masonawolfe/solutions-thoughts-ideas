@@ -107,7 +107,7 @@ async function callClaude(apiKey, title, worldContext) {
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response('', {
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
+      headers: { 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
     });
   }
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
@@ -117,7 +117,7 @@ export default async function handler(req) {
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('client-ip') || 'unknown';
     if (isRateLimited(ip)) {
       return new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute.' }), {
-        status: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        status: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
     }
 
@@ -126,7 +126,7 @@ export default async function handler(req) {
     if (title.length > 200) return new Response(JSON.stringify({ error: 'Title too long' }), { status: 400 });
     if (isBlockedInput(title)) {
       return new Response(JSON.stringify({ isValidTopic: false, invalidReason: 'Please search for a real conflict or policy topic.' }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
     }
 
@@ -160,7 +160,7 @@ export default async function handler(req) {
 
     if (cached) {
       return new Response(JSON.stringify({ ...cached, _cached: true }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
     }
 
@@ -180,7 +180,7 @@ export default async function handler(req) {
 
     if (p.isValidTopic === false) {
       return new Response(JSON.stringify({ isValidTopic: false, invalidReason: p.invalidReason || 'Not recognized.' }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
     }
 
@@ -201,12 +201,12 @@ export default async function handler(req) {
     try { await cache.setJSON(key, { ...result, _cachedAt: Date.now() }); } catch (e) {}
 
     return new Response(JSON.stringify(result), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   } catch (e) {
     console.error('Search error:', e);
     return new Response(JSON.stringify({ error: e.message || 'Internal error' }), {
-      status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   }
 }

@@ -8,7 +8,7 @@ function cacheKey(title) {
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response('', {
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
+      headers: { 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
     });
   }
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
@@ -41,16 +41,16 @@ export default async function handler(req) {
       // Reset flag count
       await flags.setJSON(key, { ...entry, count: 0, lastReset: now });
       return new Response(JSON.stringify({ flagged: true, refreshQueued: true, message: 'Thanks! This topic will be refreshed with current data.' }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
     }
 
     return new Response(JSON.stringify({ flagged: true, refreshQueued: false, count: entry.count, threshold: THRESHOLD, message: `Flagged as outdated (${entry.count}/${THRESHOLD} needed to trigger refresh).` }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   }
 }

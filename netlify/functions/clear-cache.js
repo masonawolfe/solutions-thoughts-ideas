@@ -7,9 +7,9 @@ export default async function handler(req) {
   // Simple admin auth via query param (set ADMIN_SECRET in Netlify env vars)
   const url = new URL(req.url);
   const key = url.searchParams.get('key');
-  const adminSecret = process.env.ADMIN_SECRET || 'sti-admin-2026';
+  const adminSecret = process.env.ADMIN_SECRET;
 
-  if (key !== adminSecret) {
+  if (!adminSecret || key !== adminSecret) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401, headers: { 'Content-Type': 'application/json' }
     });

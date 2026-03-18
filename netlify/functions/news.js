@@ -5,7 +5,7 @@ export default async function handler(req, context) {
   if (req.method === 'OPTIONS') {
     return new Response('', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, OPTIONS'
       }
@@ -66,7 +66,7 @@ export default async function handler(req, context) {
     return new Response(JSON.stringify({ articles: items, topic }), {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com',
         'Cache-Control': 'public, max-age=900' // Cache for 15 minutes
       }
     });
@@ -75,7 +75,7 @@ export default async function handler(req, context) {
     console.error('News error:', e);
     return new Response(JSON.stringify({ articles: [], error: e.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   }
 }

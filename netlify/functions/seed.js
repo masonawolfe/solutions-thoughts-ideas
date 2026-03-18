@@ -15,9 +15,9 @@ const FEATURED_TOPICS = [
 export default async function handler(req, context) {
   const url = new URL(req.url);
   const key = url.searchParams.get('key');
-  const seedKey = process.env.SEED_KEY || (process.env.ANTHROPIC_API_KEY || '').slice(-8);
+  const adminSecret = process.env.ADMIN_SECRET;
 
-  if (!key || key !== seedKey) {
+  if (!adminSecret || !key || key !== adminSecret) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' }
@@ -49,6 +49,6 @@ export default async function handler(req, context) {
   }
 
   return new Response(JSON.stringify({ seeded: results }, null, 2), {
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    headers: { 'Content-Type': 'application/json' }
   });
 }

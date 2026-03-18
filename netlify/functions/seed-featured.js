@@ -3,6 +3,16 @@
 import { getStore } from "@netlify/blobs";
 
 export default async function handler(req) {
+  // Admin auth
+  const url = new URL(req.url);
+  const key = url.searchParams.get('key');
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret || !key || key !== adminSecret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const cache = getStore("analysis-cache");
     const trending = getStore("trending");
@@ -73,12 +83,12 @@ export default async function handler(req) {
     await featured.setJSON('featured-list', data);
 
     return new Response(JSON.stringify({ ok: true, count: candidates.length, tidbitsCount: tidbits.length, topics: candidates.map(c => c.title) }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }

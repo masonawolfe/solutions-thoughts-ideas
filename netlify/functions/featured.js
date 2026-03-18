@@ -3,7 +3,7 @@ import { getStore } from "@netlify/blobs";
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return new Response('', { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,OPTIONS' } });
+    return new Response('', { status: 204, headers: { 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com', 'Access-Control-Allow-Methods': 'GET,OPTIONS' } });
   }
 
   try {
@@ -12,17 +12,17 @@ export default async function handler(req) {
 
     if (!data || !data.topics || data.topics.length === 0) {
       return new Response(JSON.stringify({ topics: [], updatedAt: null }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com', 'Cache-Control': 'public, max-age=300' }
       });
     }
 
     return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com', 'Cache-Control': 'public, max-age=300' }
     });
   } catch (e) {
     return new Response(JSON.stringify({ topics: [], error: e.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
   }
 }
