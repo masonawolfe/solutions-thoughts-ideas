@@ -56,11 +56,9 @@ export default async function handler(req) {
             readTime: cached.readTime || 7
           });
 
-          // Collect didYouKnow for tidbits (cap at 140 chars for card display)
-          if (cached.didYouKnow) {
-            let dyk = cached.didYouKnow;
-            if (dyk.length > 140) dyk = dyk.slice(0, 137) + '...';
-            tidbits.push({ topic: shortTitle, text: dyk });
+          // Only include didYouKnow that fits the card — no truncation, must be a complete thought
+          if (cached.didYouKnow && cached.didYouKnow.length <= 150) {
+            tidbits.push({ topic: shortTitle, text: cached.didYouKnow });
           }
         }
       } catch (e) {}
