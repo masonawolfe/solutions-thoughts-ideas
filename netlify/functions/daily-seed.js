@@ -1,5 +1,6 @@
 // Daily cron: seed new topics from headlines + refresh stale trending analyses + maintain world-state context
 import { getStore } from "@netlify/blobs";
+import { Sentry } from "./sentry-init.js";
 
 const YEAR = new Date().getFullYear();
 const DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -42,7 +43,14 @@ async function callClaude(apiKey, messages, maxTokens = 8192) {
       messages
     })
   });
-  if (!res.ok) throw new Error(`Claude API ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 402 || res.status === 429) {
+      const tag = res.status === 429 ? '[RATE_LIMIT]' : '[CREDITS]';
+      console.error(`${tag} Claude API returned ${res.status} — daily seed aborting`);
+      throw new Error(`[CREDITS] Claude API unavailable (${res.status})`);
+    }
+    throw new Error(`Claude API ${res.status}`);
+  }
   const data = await res.json();
   return data.content.map(b => b.text || '').join('');
 }

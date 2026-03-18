@@ -22,6 +22,8 @@
 {"@context":"https://schema.org","@type":"WebApplication","name":"Solutions, Thoughts & Ideas","url":"https://solutionsthoughtsideas.com","description":"AI-powered nonpartisan analysis of complex conflicts and policy debates","applicationCategory":"Reference","author":{"@type":"Person","name":"Mason Wolfe"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
 </script>
 <link rel="canonical" href="https://solutionsthoughtsideas.com">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2a2420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -505,6 +507,14 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
     <div id="grid-tabs-container"></div>
     <div class="cgrid" id="cgrid"></div>
   <div id="dyk" class="tidbit-feed"></div>
+  <div class="suggest-box" style="margin-top:2rem;padding:1.2rem;background:var(--surf);border:1px solid var(--rule);border-radius:8px;text-align:center;">
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:.6rem;">Don't see a topic you care about?</p>
+    <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
+      <input type="text" id="suggest-input" maxlength="200" placeholder="Suggest a topic..." style="flex:1;padding:10px 12px;border:1px solid var(--rule);border-radius:6px;font-family:var(--bd);font-size:.82rem;color:var(--ink);background:var(--card);outline:none;min-height:44px;" aria-label="Suggest a topic" />
+      <button onclick="submitSuggestion()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-family:var(--bd);font-size:.82rem;cursor:pointer;min-height:44px;white-space:nowrap;">Submit</button>
+    </div>
+    <p id="suggest-msg" style="font-size:.76rem;color:var(--faint);margin-top:.5rem;min-height:1em;"></p>
+  </div>
   </main>
   <div id="dview" style="display:none;" id="main-content">
     <button class="back" id="bbtn" onclick="goHome()">← All conflicts</button>
@@ -1467,6 +1477,28 @@ async function fetchNews(topic) {
     feed.innerHTML = '<p class="news-empty">Could not load news. <button class="retry" onclick="fetchNews(\'' + eh(topic) + '\')">Retry</button></p>';
   }
 }
+
+// Suggest a Topic
+async function submitSuggestion() {
+  const input = document.getElementById('suggest-input');
+  const msg = document.getElementById('suggest-msg');
+  const topic = input.value.trim();
+  if (!topic || topic.length < 4) { msg.textContent = 'Please enter at least 4 characters.'; msg.style.color = 'var(--rust)'; return; }
+  msg.textContent = 'Submitting...'; msg.style.color = 'var(--faint)';
+  try {
+    const res = await fetch(API_BASE + '/suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic }) });
+    const data = await res.json();
+    if (res.ok) { msg.textContent = 'Thanks for your suggestion!'; msg.style.color = 'var(--teal)'; input.value = ''; }
+    else { msg.textContent = data.error || 'Something went wrong.'; msg.style.color = 'var(--rust)'; }
+  } catch (e) { msg.textContent = 'Could not submit. Please try again.'; msg.style.color = 'var(--rust)'; }
+}
+
+// Service worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 </script>
+<!-- Cloudflare Web Analytics -->
+<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d963cc6f3c2d475b805b65d6a3647ef2"}'></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // Search function: AI-powered topic analysis with caching + trending tracking
 import { getStore } from "@netlify/blobs";
+import { Sentry } from "./sentry-init.js";
 
 const YEAR = new Date().getFullYear();
 const DATE = new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
@@ -69,21 +70,43 @@ function isBlockedInput(title) {
   return BLOCKED_PATTERNS.some(p => p.test(title));
 }
 
-// In-memory rate limiter (per function instance — resets on cold start, good enough for basic protection)
-const rateLimits = new Map();
-const RATE_WINDOW_MS = 60 * 1000;
-const RATE_MAX = 5;
+// Rate limiter: Upstash Redis (persistent across cold starts) with in-memory fallback
+import { Redis } from "@upstash/redis";
 
-function isRateLimited(ip) {
+const RATE_MAX = 5;
+const RATE_WINDOW_SEC = 60;
+
+let redis = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+}
+
+// Fallback in-memory limiter (used when Upstash not configured)
+const rateLimitsMemory = new Map();
+
+async function isRateLimited(ip) {
+  if (redis) {
+    try {
+      const key = `rate:${ip}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, RATE_WINDOW_SEC);
+      return count > RATE_MAX;
+    } catch (e) {
+      console.error('[RATE_LIMIT] Redis error, falling back to memory:', e.message);
+    }
+  }
+  // In-memory fallback
   const now = Date.now();
-  const entry = rateLimits.get(ip);
-  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
-    rateLimits.set(ip, { windowStart: now, count: 1 });
+  const entry = rateLimitsMemory.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_SEC * 1000) {
+    rateLimitsMemory.set(ip, { windowStart: now, count: 1 });
     return false;
   }
   entry.count++;
-  if (entry.count > RATE_MAX) return true;
-  return false;
+  return entry.count > RATE_MAX;
 }
 
 async function callClaude(apiKey, title, worldContext) {
@@ -100,7 +123,14 @@ async function callClaude(apiKey, title, worldContext) {
       messages: [{ role: 'user', content: USER_PROMPT(title, worldContext) }]
     })
   });
-  if (!res.ok) throw new Error(`Claude API ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 402 || res.status === 429) {
+      const tag = res.status === 429 ? '[RATE_LIMIT]' : '[CREDITS]';
+      console.error(`${tag} Claude API returned ${res.status}`);
+      throw new Error('Our analysis engine is temporarily unavailable. Please try again later.');
+    }
+    throw new Error(`Claude API ${res.status}`);
+  }
   return res.json();
 }
 
@@ -115,7 +145,7 @@ export default async function handler(req) {
   try {
     // Rate limit by IP
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('client-ip') || 'unknown';
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(ip)) {
       return new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
       });
@@ -205,6 +235,7 @@ export default async function handler(req) {
     });
   } catch (e) {
     console.error('Search error:', e);
+    if (Sentry) { Sentry.captureException(e); await Sentry.flush(2000).catch(() => {}); }
     return new Response(JSON.stringify({ error: e.message || 'Internal error' }), {
       status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://solutionsthoughtsideas.com' }
     });
