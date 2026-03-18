@@ -477,16 +477,7 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
 /* ============================================================
    FEATURED TOPICS (card metadata only — full analysis loaded from API)
    ============================================================ */
-const CONFLICTS=[
-  {id:'israel-hamas',title:'Israel & Hamas',s:'The conflict over Gaza, statehood, and regional security.',h:'high',t:['Geopolitical','Middle East','Active'],rd:8},
-  {id:'abortion',title:'Abortion rights',s:'The ongoing debate over reproductive autonomy in the US.',h:'high',t:['US Policy','Social','Wedge Issue'],rd:7},
-  {id:'ukraine-russia',title:'Ukraine & Russia',s:"Russia's invasion and the broader question of European security.",h:'high',t:['Geopolitical','Europe','Active'],rd:8},
-  {id:'sunni-shia',title:'Sunni-Shia divide',s:'The centuries-old theological and political rift in Islam.',h:'med',t:['Religious','Middle East','Historical'],rd:7},
-  {id:'us-immigration',title:'US immigration',s:'Border policy, asylum, and American national identity.',h:'high',t:['US Policy','Social','Wedge Issue'],rd:7},
-  {id:'climate',title:'Climate policy',s:'How fast to act, who pays, and the cost of inaction.',h:'med',t:['Global','Policy','Science'],rd:7},
-  {id:'gun-control',title:'Gun control',s:'Second Amendment rights versus public safety.',h:'high',t:['US Policy','Constitutional','Wedge Issue'],rd:7},
-  {id:'us-iran',title:'US-Iran tensions',s:'Nuclear ambitions, proxy conflicts, and decades of mistrust.',h:'high',t:['Geopolitical','Middle East','Active'],rd:7},
-];
+let featuredTopics = []; // populated dynamically from /featured endpoint
 
 /* ============================================================
    STATE
@@ -684,15 +675,25 @@ function renderGrid(){
 
   let cardsHtml = '';
   if(homepageMode === 'featured' || trendCount === 0) {
-    cardsHtml = CONFLICTS.map(c=>`
-      <div class="cc2" tabindex="0" role="button" aria-label="Analyze ${eh(c.title)}"
-        onclick="go('${c.id}','${eh(c.title)}',false)"
-        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('${c.id}','${eh(c.title)}',false);}">
-        <div class="hrow"><div class="hrowl"><div class="hdot h${c.h}"></div><span class="htxt">${hl[c.h]}</span></div><span class="rdtime">${c.rd} min read</span></div>
-        <h3>${eh(c.title)}</h3>
-        <p>${eh(c.s)}</p>
-        <div class="ctags">${c.t.map(t=>`<span class="ctag${t==='Wedge Issue'?' ctag-w':''}">${t}</span>`).join('')}</div>
-      </div>`).join('');
+    if (featuredTopics.length === 0) {
+      cardsHtml = `<div style="text-align:center;padding:2rem;color:var(--faint);">
+        <div class="spin" style="margin:0 auto 1rem;"></div>
+        <p>Loading featured topics...</p>
+      </div>`;
+    } else {
+      cardsHtml = featuredTopics.map(c=>{
+        const hc = hmap[c.intensity] || 'm';
+        const tags = (c.tags||[]).slice(0,3);
+        return `<div class="cc2" tabindex="0" role="button" aria-label="Analyze ${eh(c.title)}"
+          onclick="go(null,'${eh(c.title)}',false)"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go(null,'${eh(c.title)}',false);}">
+          <div class="hrow"><div class="hrowl"><div class="hdot h${hc}"></div><span class="htxt">${hl[c.intensity]||'Medium intensity'}</span></div><span class="rdtime">${c.readTime||7} min read</span></div>
+          <h3>${eh(c.title)}</h3>
+          <p>${eh(c.summary||'')}</p>
+          <div class="ctags">${tags.map(t=>`<span class="ctag${t==='Wedge Issue'?' ctag-w':''}">${t}</span>`).join('')}</div>
+        </div>`;
+      }).join('');
+    }
   } else {
     cardsHtml = trendingTopics.map(t=>{
       const hc = hmap[t.intensity] || 'm';
@@ -722,6 +723,19 @@ function renderGrid(){
   gridEl.innerHTML = cardsHtml;
 }
 
+// Fetch featured topics from backend
+async function fetchFeatured(){
+  try {
+    const res = await fetch(API_BASE + '/featured');
+    if(!res.ok) return;
+    const data = await res.json();
+    featuredTopics = (data.topics || []);
+    renderGrid();
+  } catch(e) {
+    console.log('Featured fetch skipped:', e.message);
+  }
+}
+
 // Fetch trending topics from backend
 async function fetchTrending(){
   try {
@@ -742,24 +756,7 @@ async function fetchTrending(){
 /* ============================================================
    TIDBIT FEED
    ============================================================ */
-const EXTRA_TIDBITS=[
-  {topic:'Israel & Hamas',text:'Before 1948, Jews and Arabs lived as neighbors in many Palestinian cities — shared markets, schools, and social life were common.'},
-  {topic:'Israel & Hamas',text:'The Dead Sea Scrolls, found in the West Bank, are among humanity\'s oldest manuscripts — claimed as heritage by multiple groups.'},
-  {topic:'Abortion Rights',text:'In 2024, every single state ballot initiative on abortion rights went in favor of expanding or protecting access — including in red states.'},
-  {topic:'Abortion Rights',text:'France enshrined the right to abortion in its constitution in 2024 — the first country in the world to do so.'},
-  {topic:'Ukraine & Russia',text:'Ukraine gave up the world\'s third-largest nuclear arsenal in 1994 in exchange for security guarantees — from Russia, the US, and the UK.'},
-  {topic:'Ukraine & Russia',text:'The word "Ukraine" derives from a Slavic root meaning "borderland" — a name that has shaped centuries of geopolitical struggle.'},
-  {topic:'Sunni-Shia Divide',text:'The city of Karbala in Iraq draws 20+ million Shia pilgrims annually for Arbaeen — one of the largest peaceful gatherings on Earth.'},
-  {topic:'Sunni-Shia Divide',text:'Oman follows Ibadi Islam — neither Sunni nor Shia — and has served as a neutral diplomatic back-channel for decades.'},
-  {topic:'US Immigration',text:'Immigrants founded or co-founded 45% of Fortune 500 companies, including Google, Tesla, eBay, and Yahoo.'},
-  {topic:'US Immigration',text:'Ellis Island processed 12 million immigrants between 1892 and 1954 — about 40% of all Americans can trace ancestry through it.'},
-  {topic:'Climate Policy',text:'Iceland runs almost entirely on renewable energy — geothermal and hydropower provide 100% of its electricity.'},
-  {topic:'Climate Policy',text:'Trees planted today won\'t reach peak carbon absorption for 20-30 years — reforestation is a long game.'},
-  {topic:'Gun Control',text:'Switzerland has one of the highest gun ownership rates in Europe but extremely low gun violence — universal military service and strict ammo rules play a role.'},
-  {topic:'Gun Control',text:'The US had a federal assault weapons ban from 1994-2004. Studies show mixed but suggestive evidence it reduced mass shooting deaths.'},
-  {topic:'US-Iran Tensions',text:'Iran has one of the most educated populations in the Middle East — over 60% of university students are women.'},
-  {topic:'US-Iran Tensions',text:'The ancient Persian Empire under Cyrus the Great issued what many consider the first declaration of human rights in 539 BCE.'},
-];
+// Tidbits are now sourced dynamically from API responses (didYouKnow field)
 
 let tidbitIdx=0;
 function renderDYK(){
@@ -771,7 +768,7 @@ function renderDYK(){
     const d=cache[key];
     if(d&&d.didYouKnow)tidbits.push({topic:d.title||key,text:d.didYouKnow});
   }
-  EXTRA_TIDBITS.forEach(t=>tidbits.push(t));
+  // Tidbits are now fully dynamic from API responses
   // Shuffle
   for(let i=tidbits.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tidbits[i],tidbits[j]]=[tidbits[j],tidbits[i]];}
 
@@ -1376,23 +1373,8 @@ function setupTOCObserver(){
 renderAuthBar();
 renderGrid();
 renderDYK();
+fetchFeatured(); // Load featured topics on startup
 fetchTrending(); // Load trending topics on startup
-
-// Pre-warm featured topics once per session (avoids burning function invocations on every page load)
-if(!sessionStorage.getItem('sti-warmed')){
-  sessionStorage.setItem('sti-warmed','1');
-  (async function preWarm(){
-    for(const c of CONFLICTS){
-      const ckey=ck(c.title);
-      if(cache[ckey])continue;
-      try{
-        const res=await fetch(API_BASE+'/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:c.title})});
-        if(res.ok){const data=await res.json();if(data.title)cache[ckey]=data;}
-      }catch(e){/* silent */}
-    }
-    renderDYK();
-  })();
-}
 
 // Live news fetcher
 async function fetchNews(topic) {

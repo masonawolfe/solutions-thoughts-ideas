@@ -19,8 +19,10 @@ Return ONLY raw JSON (no markdown):
 {"isValidTopic":true,"invalidReason":"","title":"","isWedge":false,"intensity":"high","region":"","sensitivity":null,"summary":"","tags":[],"readTime":7,"lastVerified":"${DATE}","keyDates":[{"date":"","event":""}],"situation":"","sides":[{"name":"","coreBeliefs":"","keyFigures":"","c":"sc1"}],"importantDistinction":"","missingVoices":"","powerBrokers":[{"name":"","description":""}],"gameTheory":"","keyLeaders":[{"name":"","role":"","stake":""}],"resolutionPaths":[{"title":"","description":""}],"historicalPrecedent":"","quickTake":"","pullQuote":"","didYouKnow":"","discussionGuide":{"ageNote":"Ages 14+","starters":[],"values":"","redFlags":"","activity":""},"organizations":[{"name":"","what":"","tag":"","url":""}],"actions":[{"icon":"","title":"","desc":"","links":[{"text":"","url":""}]}],"sources":[{"id":1,"text":"","org":"","url":"","date":"${YEAR}"}]}
 Requirements: 3 sides, 4 power brokers, 4 key leaders with FULL NAMES, 3 resolution paths, 3 organizations with URLs, 3 actions with emoji icons and URLs, 5 sources. keyDates MUST span the FULL history of the conflict — from its origins through every major escalation, turning point, and agreement up to the most recent 2025-2026 events. Include 8-12 key dates minimum. The CURRENT WORLD CONTEXT above is for grounding recent facts only — do NOT limit your historical analysis to recent headlines. Be concise but historically comprehensive.`;
 
-const EXTRACT_PROMPT = (headlines) => `From these news headlines, extract 3-5 major conflict or policy debate topics suitable for balanced multi-perspective analysis. Only pick substantive geopolitical conflicts or policy debates, not celebrity news or sports. Return ONLY a JSON array of short topic titles (2-5 words each):
+const EXTRACT_PROMPT = (headlines) => `From these news headlines, extract 5-8 major conflict or policy debate topics suitable for balanced multi-perspective analysis. Only pick substantive geopolitical conflicts, policy debates, or social issues where reasonable people disagree. NOT celebrity news, sports, weather, or single-event stories without broader debate. Each topic must be an ongoing issue with multiple perspectives, not just breaking news. Return ONLY a JSON array of objects: [{"title":"2-5 word topic","reason":"one sentence why this is a substantive multi-sided debate","score":1-10}]. Score 10 = deeply divisive multi-perspective issue, 1 = not really debatable. Only include topics scoring 7+.
 ${headlines}`;
+
+const VALIDATE_TOPIC = (title) => `Is "${title}" a substantive conflict or policy debate suitable for balanced multi-perspective analysis? It must be an issue where reasonable, informed people genuinely disagree — not a settled fact, trivial controversy, or single news event. Reply with ONLY raw JSON: {"valid":true/false,"reason":"one sentence"}`;
 
 function cacheKey(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -129,8 +131,11 @@ export default async function handler(req) {
   const cache = getStore("analysis-cache");
   const trending = getStore("trending");
   const contextStore = getStore("context");
+  const featured = getStore("featured");
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const MIN_FEATURED = 8;
   const log = [];
+  const seededTopics = []; // track what we seed this run
 
   // --- PART 0: Refresh world-state context from today's headlines ---
   let headlines = '';
@@ -159,8 +164,12 @@ export default async function handler(req) {
       if (fi >= 0 && li >= 0) clean = clean.slice(fi, li + 1);
       const topics = JSON.parse(clean);
 
-      for (const title of topics.slice(0, 5)) {
-        if (typeof title !== 'string' || title.length < 3) continue;
+      // Sort by score descending, take top 5
+      const sorted = topics.filter(t => t && t.title && (t.score || 0) >= 7).sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      for (const topicObj of sorted.slice(0, 5)) {
+        const title = typeof topicObj === 'string' ? topicObj : topicObj.title;
+        if (!title || title.length < 3) continue;
         const key = cacheKey(title);
 
         // Skip if already cached and fresh
@@ -186,6 +195,7 @@ export default async function handler(req) {
               td = { title, count: 2, firstSearched: now, lastSearched: now, recentSearches: [now, now] };
             }
             await trending.setJSON(key, td);
+            seededTopics.push({ key, title, intensity: result.intensity, summary: result.summary, tags: result.tags, readTime: result.readTime });
             log.push(`seeded: ${title}`);
           }
         } catch (e) {
@@ -243,6 +253,88 @@ export default async function handler(req) {
     }
   } catch (e) {
     log.push(`trending-refresh-error: ${e.message}`);
+  }
+
+  // --- PART 3: Build featured topics list (always maintain at least MIN_FEATURED) ---
+  try {
+    // Gather candidates: seeded topics + top trending with cached analyses
+    const featuredCandidates = [...seededTopics];
+    const seededKeys = new Set(seededTopics.map(t => t.key));
+
+    // Pull top trending topics that have cached analyses
+    const trendList = await trending.list();
+    const now = Date.now();
+    const trendScored = [];
+    for (const { key } of trendList.blobs) {
+      if (seededKeys.has(key)) continue; // already included
+      try {
+        const td = await trending.get(key, { type: "json" });
+        if (!td || td.count < 1) continue;
+        const searches = (td.recentSearches || []).filter(t => now - t < 30 * 24 * 60 * 60 * 1000);
+        let score = 0;
+        searches.forEach(t => {
+          const age = now - t;
+          if (age < 24 * 60 * 60 * 1000) score += 10;
+          else if (age < 7 * 24 * 60 * 60 * 1000) score += 3;
+          else score += 1;
+        });
+        score += Math.log2(td.count + 1) * 2;
+        trendScored.push({ key, title: td.title, score });
+      } catch (e) {}
+    }
+    trendScored.sort((a, b) => b.score - a.score);
+
+    // Fill from trending
+    for (const t of trendScored) {
+      if (featuredCandidates.length >= MIN_FEATURED) break;
+      try {
+        const cached = await cache.get(t.key, { type: "json" });
+        if (cached && cached.situation) {
+          featuredCandidates.push({
+            key: t.key, title: cached.title || t.title,
+            intensity: cached.intensity || 'medium', summary: cached.summary || '',
+            tags: cached.tags || [], readTime: cached.readTime || 7
+          });
+        }
+      } catch (e) {}
+    }
+
+    // If still under MIN_FEATURED, generate more from headlines
+    if (featuredCandidates.length < MIN_FEATURED && headlines) {
+      const existingKeys = new Set(featuredCandidates.map(t => t.key));
+      const moreRaw = await callClaude(apiKey, [{ role: 'user', content: `From these news headlines, extract ${MIN_FEATURED - featuredCandidates.length} additional conflict or policy debate topics NOT in this list: ${[...existingKeys].join(', ')}. Return ONLY a JSON array of short topic titles:\n${headlines}` }], 256);
+      let moreClean = moreRaw.replace(/```json|```/g, '').trim();
+      const mfi = moreClean.indexOf('['), mli = moreClean.lastIndexOf(']');
+      if (mfi >= 0 && mli >= 0) moreClean = moreClean.slice(mfi, mli + 1);
+      try {
+        const moreTopics = JSON.parse(moreClean);
+        for (const title of moreTopics) {
+          if (featuredCandidates.length >= MIN_FEATURED) break;
+          if (typeof title !== 'string' || title.length < 3) continue;
+          const key = cacheKey(title);
+          if (existingKeys.has(key)) continue;
+          try {
+            const result = await generateAnalysis(apiKey, title, contextStore);
+            if (result) {
+              await cache.setJSON(key, { ...result, _cachedAt: Date.now() });
+              const tnow = Date.now();
+              await trending.setJSON(key, { title, count: 2, firstSearched: tnow, lastSearched: tnow, recentSearches: [tnow, tnow] });
+              featuredCandidates.push({ key, title: result.title || title, intensity: result.intensity, summary: result.summary, tags: result.tags, readTime: result.readTime });
+              log.push(`featured-fill: ${title}`);
+            }
+          } catch (e) { log.push(`featured-fill-error: ${title} - ${e.message}`); }
+        }
+      } catch (e) { log.push(`featured-fill-parse-error: ${e.message}`); }
+    }
+
+    // Save featured list
+    await featured.setJSON('featured-list', {
+      topics: featuredCandidates.slice(0, 12),
+      updatedAt: new Date().toISOString()
+    });
+    log.push(`featured: ${featuredCandidates.length} topics saved`);
+  } catch (e) {
+    log.push(`featured-error: ${e.message}`);
   }
 
   return new Response(JSON.stringify({ ok: true, log, timestamp: new Date().toISOString() }), {
