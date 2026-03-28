@@ -68,8 +68,11 @@ git push origin main
 - Homepage has Featured/Trending tabs — toggle via `homepageMode` variable
 - "Outdated?" button on topic detail pages triggers community staleness flagging
 - "Did You Know" cards on homepage — currently display-only, not clickable (known issue, see below)
-- Topic data structure: `{ title, sides[], keyDates[], situation, gameTheory, resolutionPaths[], discussionGuide, organizations, actions, quickTake, pullQuote, didYouKnow, sources[], ... }`
+- Topic data structure: `{ title, sides[], keyDates[], situation, gameTheory, resolutionPaths[], discussionGuide, organizations, actions, quickTake, pullQuote, didYouKnow, sources[], statusAssessment, disagreementType, geography, safeImageQuery, ... }`
 - Side colors use CSS classes `sc1` through `sc6`
+- Conflict Status badges: colored by category (active-crisis=red, frozen=blue, deadlock=amber, shifting=orange, resolution=green) with trajectory arrows
+- Interactive maps: Leaflet.js + OpenStreetMap (light) / CartoDB Dark Matter (dark), 2-4 markers per topic
+- Conflict images: Wikimedia Commons API, client-side fetch with content safety filter + license check
 
 ### Backend (Netlify Functions)
 - **search.js**: Input validation (profanity filter, rate limiting 5/min/IP, length check, repeated char detection) → Netlify Blobs cache check (7-day TTL) → context pipeline (world-state blob + topic RSS headlines) → Claude Haiku generation → cache + trending tracking. Uses raw fetch instead of Anthropic SDK for faster cold starts. `max_tokens` set to 8192.
@@ -92,6 +95,13 @@ The prompt explicitly instructs: "The CURRENT WORLD CONTEXT above is for groundi
 - `didYouKnow` must be a single surprising sentence under 130 characters
 - 4 key leaders must include FULL NAMES
 - 3 sides, 4 power brokers, 3 resolution paths, 3 orgs with URLs, 3 actions, 5 sources
+- `intensity` calibrated across full range: critical/high/medium/low with defined criteria
+
+**Deployed prompt fields (Session 11):**
+- `statusAssessment` — classifies current conflict state: active-crisis, frozen-conflict, policy-deadlock, shifting-ground, resolution-trajectory. Includes trajectory (escalating/stable/de-escalating) and reasoning. Rendered as colored badges in detail view.
+- `disagreementType` — classifies fundamental nature of disagreement: resource-allocation, identity-values, sovereignty-territory, institutional-power, rights-freedoms, security-threat. Enables cross-topic pattern recognition. Rendered as teal pills.
+- `geography` — center coordinates [lat, lng], zoom level, and 2-4 markers with key locations. Powers Leaflet.js interactive maps with dark/light tile switching.
+- `safeImageQuery` — Claude-suggested Wikimedia Commons search term for non-graphic, CC-licensed images. Client-side fetcher with category blocklist and license verification.
 
 ### Caching Strategy
 - AI responses cached in Netlify Blobs with 7-day TTL (auto-expire and regenerate)
@@ -112,7 +122,9 @@ The prompt explicitly instructs: "The CURRENT WORLD CONTEXT above is for groundi
 
 **Fully deployed and operational.** 10 Netlify Functions live (search, trending, news, daily-seed, flag-outdated, featured, seed, seed-featured, clear-cache, suggest). ANTHROPIC_API_KEY + ADMIN_SECRET set. Auto-deploys from GitHub main branch. Security hardened (CORS locked to production domain, admin endpoints require ADMIN_SECRET). All 12 panel UX issues resolved. Cloudflare Web Analytics live.
 
-**Recent completions (Session 9):** Cloudflare Web Analytics deployed, Sentry + Upstash Redis code integrated (needs env vars), API credit exhaustion handling, Suggest a Topic feature, PWA support (manifest + service worker + offline caching), SEO meta tags, accessibility landmarks, error recovery UX.
+**Recent completions (Session 11):** Conflict Status Assessment badges (5 categories + trajectory arrows), Disagreement Type classification (6 types), interactive Leaflet.js maps with dark mode tiles, Wikimedia Commons images with content safety filter. All new fields added to Claude prompt and rendered in detail view. Leaflet CDN added with SRI integrity hashes.
+
+**Earlier completions (Session 9):** Cloudflare Web Analytics deployed, Sentry + Upstash Redis code integrated (needs env vars), API credit exhaustion handling, Suggest a Topic feature, PWA support (manifest + service worker + offline caching), SEO meta tags, accessibility landmarks, error recovery UX.
 
 ## Infrastructure Status
 | Service | Code | Account/Env Vars | Status |

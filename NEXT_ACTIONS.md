@@ -72,6 +72,30 @@ _All services below are free at current scale and scale in place (same data, sam
 - [x] `<link rel="manifest">` + `<meta name="theme-color">` added to `<head>`
 - [ ] (Future) Create actual 192x192 and 512x512 app icons (currently placeholders)
 
+## Backlog — New Features (code agent sessions)
+
+### Conflict Status Assessment + Disagreement Type — DONE
+- [x] `statusAssessment` field added to Claude prompt (search.js + daily-seed.js) with 5 categories + trajectory
+- [x] `disagreementType` field added to Claude prompt with 6 primary types + optional secondary
+- [x] Both fields rendered in detail view: colored status badge with trajectory arrow, disagreement type pills, reasoning text
+- [x] Prompt requirements enforced in both search.js and daily-seed.js
+- [ ] **Clear all cached analyses** — New fields will appear as cached analyses expire (7-day TTL). To force immediate regeneration, call clear-cache admin endpoint.
+
+### Conflict Maps — Leaflet.js + OpenStreetMap — DONE
+- [x] Leaflet.js CDN (CSS + JS, v1.9.4 with SRI hashes) added to `<head>`
+- [x] `geography` field added to Claude prompt: center coords, zoom level, 2-4 markers with name/lat/lng/role
+- [x] Interactive map rendered between badges and key dates: Leaflet + OSM tiles, scroll-wheel zoom disabled
+- [x] Dark mode: CartoDB Dark Matter tiles; Light mode: standard OpenStreetMap
+- [x] Markers with popups showing location name + role
+
+### Conflict Images — Wikimedia Commons — DONE
+- [x] `safeImageQuery` field added to Claude prompt (Claude suggests safe, non-graphic search terms)
+- [x] Wikimedia image fetcher built as client-side function (`fetchWikimediaImage`) — calls Commons API with `origin=*` for CORS
+- [x] Content safety filter: regex blocklist on Wikimedia categories (casualties, gore, graphic, etc.)
+- [x] License verification: only CC, public domain, GFDL images accepted
+- [x] Rendered with lazy loading, proper attribution (title, artist, license, link to Commons)
+- [x] Graceful fallback: section removed entirely if no safe image found
+
 ## Backlog — Strategic
 - [ ] **Weekly newsletter content via Beehiiv** — After the embed is live (step 6), set up a weekly email digest repackaging the top 3-5 trending topics. The daily-seed cron already generates the content — just needs repackaging. Weekly frequency fits "understanding, not breaking news" positioning.
 - [ ] **Trend intelligence / think tank layer** — Mine aggregated search trending data to identify what communities care about before it hits mainstream media. Build a dashboard or periodic report.
@@ -127,3 +151,6 @@ _All services below are free at current scale and scale in place (same data, sam
 - [x] Suggest a Topic: suggest.js function + homepage form, 3/day/IP rate limit via Blobs
 - [x] PWA: manifest.json, sw.js service worker, offline cached topics
 - [x] ADMIN_SECRET set in Netlify (cryptographic random, 64-char hex)
+- [x] Conflict Status Assessment: statusAssessment + disagreementType fields in prompt, colored badges + trajectory arrows in detail view
+- [x] Conflict Maps: Leaflet.js + OpenStreetMap with dark mode CartoDB tiles, geography field in prompt, markers with popups
+- [x] Conflict Images: Wikimedia Commons API with Claude-suggested safe queries, category blocklist, license filter, lazy loading, attribution

@@ -354,3 +354,78 @@ _Append-only. Each session adds a dated entry at the bottom._
 - Supabase: the big one (~2-3 hrs) — real auth, comments, database
 
 **Status:** 10 Netlify Functions deployed (search, trending, news, daily-seed, flag-outdated, featured, seed, seed-featured, clear-cache, suggest). Cloudflare analytics live. Code for Sentry + Upstash deployed and waiting for env vars. Only Beehiiv and Supabase remain from the infrastructure stack.
+
+---
+
+## March 28, 2026 (Session 10 — Cowork) — Feature ideation: maps, images, conflict frameworks
+
+**Done:**
+- Designed 4 new features for backlog based on Mason's ideas (inspired by Instagram live-data dashboard and Wes Moore NPR interview):
+  1. **Conflict Status Assessment** — new `statusAssessment` JSON field classifying current state (active-crisis, frozen-conflict, policy-deadlock, shifting-ground, resolution-trajectory) with trajectory (escalating/stable/de-escalating). Renders as colored badge in detail view.
+  2. **Disagreement Type Classification** — new `disagreementType` JSON field classifying fundamental nature (resource-allocation, identity-values, sovereignty-territory, institutional-power, rights-freedoms, security-threat). Enables cross-topic pattern recognition.
+  3. **Conflict Maps** — Leaflet.js + OpenStreetMap (free, no API key). New `geography` JSON field with center coords, zoom, and 2-4 markers. CartoDB Dark Matter tiles for dark mode.
+  4. **Conflict Images** — Wikimedia Commons API (free, CC-licensed). New `safeImageQuery` field where Claude suggests non-graphic search terms. Category-based content safety filter. Graceful omission if nothing safe found.
+- Added all 4 features to NEXT_ACTIONS.md with detailed sub-tasks and implementation specs
+- Updated CLAUDE.md with planned prompt fields documentation
+- Updated DECISIONS.md with rationale for all 4 feature choices (Leaflet over Google Maps, Wikimedia over Unsplash, etc.)
+- Reviewed STI project context showing "Energy: 0%" / fully autonomous status — reconciled: infrastructure accounts (Sentry, Upstash, Supabase) parked for whenever Mason's ready, new features documented for next code session
+
+**Discovered:**
+- Claude Code completed massive amount of work between sessions: all security fixes, Cloudflare analytics, Sentry/Upstash code, API credit handling, suggest-a-topic, PWA, SEO, accessibility, error recovery, mobile responsive — essentially the entire infrastructure stack minus account creation
+- The Wes Moore framework ("broken and irreparable / broken but fixable / working and should stop / working and should continue") maps well to conflict status assessment but needed adaptation — policy outcome categories don't map 1:1 to conflict states
+- Disagreement type classification creates a genuinely novel analytical layer — no competitor does this. Users can discover that seemingly different conflicts share the same underlying structure.
+- All 4 new features are zero-cost: Leaflet/OSM are free, Wikimedia API is free, the frameworks are just new Claude prompt fields
+
+**Status:** All 4 features documented and ready for code agent. STI is in maintenance mode (0 hrs/week) but has a rich development backlog when Mason has energy. Next code session: conflict frameworks (1-2 hrs) → maps (1-2 hrs) → images (1-2 hrs), then clear cache to regenerate all analyses with new fields.
+
+---
+
+## March 28, 2026 (Session 10 continued — Cowork) — Context compaction + full project doc refresh
+
+**Done:**
+- Conversation hit context limit and compacted — full session summary preserved
+- Confirmed strategic backlog items still in place (newsletter, trend intelligence, nonprofit reports, pricing tier, grants)
+- Refreshed all 4 project tracking files to reflect complete current state:
+  - PROJECT_CONTEXT.md: added "conflict intelligence engine" reframe, v4 phase, updated competitive landscape with real 2026 numbers, context pipeline section, planned features section, infrastructure status table, expanded key decisions list
+  - SESSION_LOG.md: added this continuation entry
+  - NEXT_ACTIONS.md: reviewed — already current (no changes needed)
+  - DECISIONS.md: reviewed — already current (no changes needed)
+
+**Discovered:**
+- All project files were largely up to date from earlier in this session — PROJECT_CONTEXT.md was the only one that needed substantive updates (it was still missing the intelligence engine reframe, the 4 new features, infrastructure status, and context pipeline documentation)
+- NEXT_ACTIONS.md and DECISIONS.md were already comprehensive from the earlier session work
+
+**Status:** All project tracking files are now fully synchronized. Any new Claude session (Cowork or Code) can read these four files and have complete context. The development backlog has a clear sequence: infrastructure accounts (Sentry, Upstash) → Supabase → Beehiiv → conflict frameworks → maps → images.
+
+---
+
+## March 28, 2026 (Session 11 — Claude Code) — Three new features: status badges, maps, images
+
+**Done:**
+- **Conflict Status Assessment + Disagreement Type:**
+  - Added `statusAssessment` (5 categories: active-crisis, frozen-conflict, policy-deadlock, shifting-ground, resolution-trajectory + trajectory: escalating/stable/de-escalating) and `disagreementType` (6 primary types + optional secondary) to Claude prompt in both search.js and daily-seed.js
+  - Added both fields to result objects in search.js and daily-seed.js
+  - Rendered as colored badges below masthead: status category with trajectory arrow (↗/→/↘) + disagreement type pills + reasoning text
+  - Full CSS with dark mode variants for all 5 status colors
+- **Conflict Maps (Leaflet.js + OpenStreetMap):**
+  - Added Leaflet CDN v1.9.4 (CSS + JS with SRI integrity hashes) to `<head>`
+  - Added `geography` field to Claude prompt: center [lat, lng], zoom (3-8), 2-4 markers with name/lat/lng/role
+  - Renders interactive map between badges and key dates timeline
+  - Dark mode: CartoDB Dark Matter tiles; Light mode: standard OSM tiles
+  - Markers with popups (name + role), scroll-wheel zoom disabled for UX
+- **Conflict Images (Wikimedia Commons):**
+  - Added `safeImageQuery` field to Claude prompt — Claude suggests safe, non-graphic search terms
+  - Built `fetchWikimediaImage()` client-side function: calls Commons API with `origin=*`, iterates results
+  - Content safety filter: regex blocklist on Wikimedia categories (casualties, gore, graphic, execution, etc.)
+  - License verification: only CC, public domain, GFDL images accepted
+  - Renders with lazy loading, proper attribution (title, artist, license, link to Commons)
+  - Graceful fallback: entire section removed if no safe image found
+- Updated `safe` object in `go()` to pass all new fields (+ also added previously missing fields: discussionGuide, organizations, actions, quickTake, pullQuote)
+- All changes pushed to GitHub (commit 661eb23), Netlify auto-deployed
+- Updated NEXT_ACTIONS.md: checked off all 3 features, added to Completed section
+
+**Discovered:**
+- The `safe` object in `go()` was missing several fields that `renderDetail()` already handled (discussionGuide, organizations, actions, quickTake, pullQuote) — these were only working because cached data from the API included them, but they'd be lost on client-side re-renders. Fixed as part of this update.
+- Leaflet SRI hashes ensure CDN integrity — important for a public educational platform
+
+**Status:** 3 major features deployed. Existing cached analyses will gain new fields as they expire (7-day TTL) or when cache is manually cleared. All zero-cost additions. Next up: clear cache to see new features on existing topics, then infrastructure accounts (Sentry, Upstash, Supabase).
