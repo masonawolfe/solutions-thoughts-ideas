@@ -57,6 +57,9 @@ a.skipnav:focus{left:8px;}
 .hdr{padding:2rem 0 0;}
 .hdr h1{font-family:var(--dp);font-size:clamp(1.6rem,4vw,2.1rem);font-weight:700;color:var(--navy);line-height:1.1;}
 .hdr .sub{font-size:.69rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:5px;}
+.site-nav{display:flex;gap:16px;margin-top:6px;}
+.site-nav a{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);cursor:pointer;font-weight:600;text-decoration:none;transition:color .15s;}
+.site-nav a:hover{color:var(--rust);}
 .hbar{height:2px;background:linear-gradient(90deg,var(--navy),var(--teal) 40%,var(--rust) 70%,var(--gold));border-radius:2px;margin:1rem 0 1.6rem;}
 
 /* ===== Auth bar ===== */
@@ -516,6 +519,48 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
 .conflict-img-attr{font-size:.62rem;color:var(--faint);padding:6px 10px;line-height:1.4;}
 .conflict-img-attr a{color:var(--teal);text-decoration:none;}
 .conflict-img-attr a:hover{text-decoration:underline;}
+
+/* ===== Trend Dashboard ===== */
+.stat-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:1rem;text-align:center;}
+.stat-num{font-family:var(--dp);font-size:1.6rem;font-weight:700;color:var(--navy);}
+.stat-lbl{font-size:.7rem;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.cat-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:1rem;}
+.cat-card h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+.cat-bar{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:.78rem;}
+.cat-bar-fill{height:6px;border-radius:3px;background:var(--teal);min-width:4px;}
+.cat-bar-lbl{color:var(--ink);min-width:120px;font-size:.74rem;}
+.cat-bar-ct{color:var(--faint);font-size:.72rem;}
+.trend-row{display:grid;grid-template-columns:2.2rem 1fr 60px 70px 50px;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--rule);font-size:.8rem;}
+.trend-row:hover{background:var(--surf);}
+.trend-rank{font-family:var(--dp);font-weight:700;color:var(--faint);text-align:center;}
+.trend-title{color:var(--navy);font-weight:600;cursor:pointer;}
+.trend-title:hover{color:var(--teal);}
+.trend-vel{font-size:.72rem;font-weight:600;}
+.trend-vel.up{color:var(--sage);}
+.trend-vel.down{color:var(--rust);}
+.trend-vel.flat{color:var(--faint);}
+.trend-ct{font-size:.72rem;color:var(--muted);text-align:right;}
+.trend-spark{display:flex;align-items:flex-end;gap:1px;height:20px;}
+.trend-spark-bar{width:4px;background:var(--teal);border-radius:1px;min-height:1px;}
+.emerging-card{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sage-l);border:1px solid var(--sage);border-radius:20px;font-size:.78rem;color:var(--sage);font-weight:600;margin:4px;cursor:pointer;}
+.emerging-card:hover{background:var(--sage);color:#fff;}
+@media(max-width:600px){.trend-row{grid-template-columns:1.5rem 1fr 50px;}.trend-spark,.trend-vel{display:none;}}
+
+/* ===== Report Generator ===== */
+.rpt-section{margin:1.5rem 0;padding:1.2rem;background:var(--card);border:1px solid var(--rule);border-radius:10px;}
+.rpt-section h4{font-family:var(--dp);font-size:1rem;color:var(--navy);margin-bottom:.6rem;}
+.rpt-rec{padding:.8rem;margin:.5rem 0;border-left:3px solid var(--teal);background:var(--surf);border-radius:0 8px 8px 0;}
+.rpt-rec.high{border-left-color:var(--rust);}
+.rpt-rec.medium{border-left-color:var(--gold);}
+.rpt-rec.low{border-left-color:var(--sage);}
+.rpt-rec h5{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.rpt-rec p{font-size:.78rem;color:var(--muted);line-height:1.45;}
+.rpt-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--faint);margin-top:4px;}
+.rpt-fund{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:.6rem;margin:.4rem 0;background:var(--surf);border-radius:6px;font-size:.78rem;}
+.rpt-fund a{color:var(--teal);text-decoration:none;}
+.rpt-risk{padding:.5rem .8rem;margin:.3rem 0;background:var(--rust-l);border-radius:6px;font-size:.78rem;}
+.rpt-bottom{padding:1rem;margin-top:1.5rem;background:var(--navy);color:#fff;border-radius:10px;font-size:.88rem;line-height:1.5;font-weight:500;}
+:root[data-theme="dark"] .rpt-bottom{background:var(--card);color:var(--ink);border:1px solid var(--rule);}
 </style>
 </head>
 <body>
@@ -525,6 +570,7 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
   <header class="hdr" role="banner">
     <h1 onclick="location.hash='';renderGrid()" style="cursor:pointer">Solutions, Thoughts &amp; Ideas</h1>
     <div class="sub">Understanding every side of every conflict</div>
+    <nav class="site-nav"><a onclick="showTrends()" tabindex="0">Trends</a><a onclick="showReportForm()" tabindex="0">Nonprofit Reports</a></nav>
     <div class="hbar"></div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
   </header>
@@ -557,6 +603,36 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
       <div class="toc-mob-list" id="tocMobList"></div>
     </div>
     <div id="dc" aria-live="polite"></div>
+  </div>
+
+  <!-- Trend Intelligence Dashboard -->
+  <div id="trendview" style="display:none;">
+    <button class="back" onclick="goHome()">← Home</button>
+    <div class="mast"><h2>Trend Intelligence</h2>
+      <div class="mmeta"><span class="mchip">What communities care about</span><span class="mchip">Updated every 2 minutes</span></div>
+    </div>
+    <div id="trend-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:1rem 0;"></div>
+    <div id="trend-emerging" style="margin:1rem 0;"></div>
+    <div id="trend-categories" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:1rem 0;"></div>
+    <div id="trend-table" style="margin:1rem 0;"></div>
+  </div>
+
+  <!-- Nonprofit Strategy Report Generator -->
+  <div id="reportview" style="display:none;">
+    <button class="back" onclick="goHome()">← Home</button>
+    <div class="mast"><h2>Nonprofit Strategy Report</h2>
+      <div class="mmeta"><span class="mchip">AI-powered strategic briefings</span><span class="mchip">Free for small orgs</span></div>
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:1rem 0;">Get a localized strategic briefing on any conflict or policy issue — tailored to your organization's mission. Includes funding opportunities, partnership recommendations, and actionable next steps.</p>
+    <div id="report-form" style="display:flex;flex-direction:column;gap:10px;max-width:520px;margin:1rem 0;">
+      <input type="text" id="rpt-org" maxlength="100" placeholder="Organization name" style="padding:12px 14px;border:1px solid var(--rule2);border-radius:8px;font-family:var(--bd);font-size:.88rem;background:var(--card);color:var(--ink);outline:none;" />
+      <textarea id="rpt-mission" maxlength="500" rows="2" placeholder="Your mission in one sentence (e.g., 'We provide legal aid to refugees in the Southwest US')" style="padding:12px 14px;border:1px solid var(--rule2);border-radius:8px;font-family:var(--bd);font-size:.88rem;background:var(--card);color:var(--ink);outline:none;resize:vertical;"></textarea>
+      <input type="text" id="rpt-topic" maxlength="200" placeholder="Topic or issue (e.g., 'Immigration enforcement')" style="padding:12px 14px;border:1px solid var(--rule2);border-radius:8px;font-family:var(--bd);font-size:.88rem;background:var(--card);color:var(--ink);outline:none;" />
+      <input type="text" id="rpt-region" maxlength="100" placeholder="Region (optional, e.g., 'Arizona')" style="padding:12px 14px;border:1px solid var(--rule2);border-radius:8px;font-family:var(--bd);font-size:.88rem;background:var(--card);color:var(--ink);outline:none;" />
+      <button id="rpt-btn" onclick="generateReport()" style="padding:14px 24px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--bd);font-size:.9rem;font-weight:600;cursor:pointer;transition:background .2s;min-height:48px;">Generate Strategy Report →</button>
+      <p id="rpt-msg" style="font-size:.76rem;color:var(--faint);min-height:1em;"></p>
+    </div>
+    <div id="report-output"></div>
   </div>
 </div>
 <script>
@@ -1619,6 +1695,249 @@ async function submitSuggestion() {
     else { msg.textContent = data.error || 'Something went wrong.'; msg.style.color = 'var(--rust)'; }
   } catch (e) { msg.textContent = 'Could not submit. Please try again.'; msg.style.color = 'var(--rust)'; }
 }
+
+/* ============================================================
+   TREND INTELLIGENCE DASHBOARD
+   ============================================================ */
+function hideAllViews(){
+  document.getElementById('hview').style.display='none';
+  document.getElementById('dview').style.display='none';
+  document.getElementById('trendview').style.display='none';
+  document.getElementById('reportview').style.display='none';
+}
+
+function showTrends(){
+  hideAllViews();
+  document.getElementById('trendview').style.display='';
+  window.scrollTo(0,0);
+  loadTrendDashboard();
+}
+
+async function loadTrendDashboard(){
+  const statsEl=document.getElementById('trend-stats');
+  const emergEl=document.getElementById('trend-emerging');
+  const catEl=document.getElementById('trend-categories');
+  const tableEl=document.getElementById('trend-table');
+  statsEl.innerHTML='<div class="stat-card"><div class="spin" style="margin:0 auto;"></div></div>';
+
+  try{
+    const res=await fetch(API_BASE+'/trends-dashboard');
+    if(!res.ok) throw new Error('Dashboard unavailable');
+    const data=await res.json();
+    const s=data.summary;
+
+    // Stat cards
+    statsEl.innerHTML=`
+      <div class="stat-card"><div class="stat-num">${s.totalTopics}</div><div class="stat-lbl">Topics Tracked</div></div>
+      <div class="stat-card"><div class="stat-num">${s.totalSearches.toLocaleString()}</div><div class="stat-lbl">Total Searches</div></div>
+      <div class="stat-card"><div class="stat-num">${s.last24h}</div><div class="stat-lbl">Last 24 Hours</div></div>
+      <div class="stat-card"><div class="stat-num">${s.last7d}</div><div class="stat-lbl">Last 7 Days</div></div>
+    `;
+
+    // Emerging topics
+    if(s.emerging && s.emerging.length){
+      emergEl.innerHTML='<div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:600;margin-bottom:6px;">Emerging Topics</div>'+
+        s.emerging.map(t=>`<span class="emerging-card" onclick="go(null,'${eh(t.title).replace(/'/g,"\\'")}',false);hideAllViews();document.getElementById('dview').style.display='';">↗ ${eh(t.title)} <span style="font-weight:400;opacity:.7;">+${t.velocity}%</span></span>`).join('');
+    }
+
+    // Category breakdowns
+    let catHtml='';
+    if(Object.keys(s.byCategory).length){
+      const maxCat=Math.max(...Object.values(s.byCategory));
+      catHtml+='<div class="cat-card"><h5>By Disagreement Type</h5>';
+      const dtLabels={'resource-allocation':'Resource Allocation','identity-values':'Identity & Values','sovereignty-territory':'Sovereignty & Territory','institutional-power':'Institutional Power','rights-freedoms':'Rights & Freedoms','security-threat':'Security Threat'};
+      Object.entries(s.byCategory).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+        catHtml+=`<div class="cat-bar"><span class="cat-bar-lbl">${dtLabels[k]||k}</span><div class="cat-bar-fill" style="width:${Math.round(v/maxCat*100)}%;"></div><span class="cat-bar-ct">${v}</span></div>`;
+      });
+      catHtml+='</div>';
+    }
+    if(Object.keys(s.byStatus).length){
+      const maxSt=Math.max(...Object.values(s.byStatus));
+      const stColors={'active-crisis':'var(--rust)','frozen-conflict':'#2980b9','policy-deadlock':'var(--gold)','shifting-ground':'#e67e22','resolution-trajectory':'var(--sage)'};
+      catHtml+='<div class="cat-card"><h5>By Conflict Status</h5>';
+      const stLabels={'active-crisis':'Active Crisis','frozen-conflict':'Frozen Conflict','policy-deadlock':'Policy Deadlock','shifting-ground':'Shifting Ground','resolution-trajectory':'Resolution Trajectory'};
+      Object.entries(s.byStatus).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+        catHtml+=`<div class="cat-bar"><span class="cat-bar-lbl">${stLabels[k]||k}</span><div class="cat-bar-fill" style="width:${Math.round(v/maxSt*100)}%;background:${stColors[k]||'var(--teal)'}"></div><span class="cat-bar-ct">${v}</span></div>`;
+      });
+      catHtml+='</div>';
+    }
+    catEl.innerHTML=catHtml;
+
+    // Topic table with sparklines
+    const topics=data.topics;
+    if(topics.length){
+      const maxD=Math.max(...topics.map(t=>Math.max(...t.daily.map(d=>d.count),1)));
+      let tbl='<div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:600;margin-bottom:8px;">All Tracked Topics</div>';
+      tbl+='<div style="border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--card);">';
+      topics.forEach((t,i)=>{
+        const velClass=t.velocity>0?'up':t.velocity<0?'down':'flat';
+        const velSign=t.velocity>0?'+':'';
+        const spark=t.daily.map(d=>`<div class="trend-spark-bar" style="height:${Math.max(1,Math.round(d.count/maxD*20))}px;"></div>`).join('');
+        tbl+=`<div class="trend-row">
+          <span class="trend-rank">${i+1}</span>
+          <span class="trend-title" onclick="go(null,'${eh(t.title).replace(/'/g,"\\'")}',false);hideAllViews();document.getElementById('dview').style.display='';">${eh(t.title)}</span>
+          <span class="trend-vel ${velClass}">${velSign}${t.velocity}%</span>
+          <div class="trend-spark">${spark}</div>
+          <span class="trend-ct">${t.count}</span>
+        </div>`;
+      });
+      tbl+='</div>';
+      tableEl.innerHTML=tbl;
+    }
+  }catch(e){
+    statsEl.innerHTML='<div class="stat-card" style="grid-column:1/-1;text-align:center;"><p style="color:var(--rust);">Could not load trend data. <button class="retry" onclick="loadTrendDashboard()">Retry</button></p></div>';
+  }
+}
+
+/* ============================================================
+   NONPROFIT STRATEGY REPORT
+   ============================================================ */
+function showReportForm(){
+  hideAllViews();
+  document.getElementById('reportview').style.display='';
+  document.getElementById('report-output').innerHTML='';
+  window.scrollTo(0,0);
+}
+
+async function generateReport(){
+  const orgName=document.getElementById('rpt-org').value.trim();
+  const orgMission=document.getElementById('rpt-mission').value.trim();
+  const topic=document.getElementById('rpt-topic').value.trim();
+  const region=document.getElementById('rpt-region').value.trim();
+  const msg=document.getElementById('rpt-msg');
+  const btn=document.getElementById('rpt-btn');
+  const output=document.getElementById('report-output');
+
+  if(!orgName){msg.textContent='Please enter your organization name.';msg.style.color='var(--rust)';return;}
+  if(!orgMission||orgMission.length<10){msg.textContent='Please describe your mission (at least 10 characters).';msg.style.color='var(--rust)';return;}
+  if(!topic||topic.length<3){msg.textContent='Please enter a topic.';msg.style.color='var(--rust)';return;}
+
+  btn.disabled=true;btn.textContent='Generating report...';
+  msg.textContent='This may take 15-30 seconds.';msg.style.color='var(--faint)';
+  output.innerHTML='<div class="loading"><div class="spin"></div><p>Building your strategic briefing...</p></div>';
+
+  try{
+    const res=await fetch(API_BASE+'/report',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orgName,orgMission,topic,region})
+    });
+    const data=await res.json();
+    if(data.error){throw new Error(data.error);}
+    msg.textContent='';
+    renderReport(data);
+  }catch(e){
+    output.innerHTML='';
+    msg.textContent=e.message||'Report generation failed. Please try again.';msg.style.color='var(--rust)';
+  }finally{
+    btn.disabled=false;btn.textContent='Generate Strategy Report →';
+  }
+}
+
+function renderReport(r){
+  const o=document.getElementById('report-output');
+  let h='';
+
+  // Title
+  h+=`<div style="margin:1.5rem 0 .5rem;"><h3 style="font-family:var(--dp);font-size:1.3rem;color:var(--navy);">${eh(r.reportTitle||'Strategic Briefing')}</h3>
+    <div style="font-size:.72rem;color:var(--faint);margin-top:4px;">Prepared for ${eh(r.orgName)} · ${eh(r.topic)}${r.region?' · '+eh(r.region):''} · ${eh(r.generatedAt?.slice(0,10)||'')}</div></div>`;
+
+  // Executive Summary
+  if(r.executiveSummary){
+    h+=`<div class="rpt-section"><h4>Executive Summary</h4><p style="font-size:.85rem;line-height:1.6;color:var(--ink);">${eh(r.executiveSummary)}</p></div>`;
+  }
+
+  // Landscape
+  if(r.landscapeAnalysis){
+    const la=r.landscapeAnalysis;
+    h+='<div class="rpt-section"><h4>Landscape Analysis</h4>';
+    if(la.currentState) h+=`<p style="font-size:.82rem;line-height:1.5;margin-bottom:.6rem;">${eh(la.currentState)}</p>`;
+    if(la.localContext) h+=`<p style="font-size:.82rem;line-height:1.5;color:var(--muted);margin-bottom:.6rem;"><strong>Local context:</strong> ${eh(la.localContext)}</p>`;
+    if(la.recentDevelopments&&la.recentDevelopments.length){
+      h+='<div style="margin-top:.5rem;"><strong style="font-size:.76rem;color:var(--muted);">Recent developments:</strong><ul style="font-size:.8rem;margin:.3rem 0 0 1.2rem;line-height:1.5;">';
+      la.recentDevelopments.forEach(d=>{h+='<li>'+eh(d)+'</li>';});
+      h+='</ul></div>';
+    }
+    h+='</div>';
+  }
+
+  // Strategic Recommendations
+  if(r.strategicRecommendations&&r.strategicRecommendations.length){
+    h+='<div class="rpt-section"><h4>Strategic Recommendations</h4>';
+    r.strategicRecommendations.forEach(rec=>{
+      h+=`<div class="rpt-rec ${rec.priority||'medium'}"><h5>${eh(rec.title)}</h5><p>${eh(rec.rationale)}</p>`;
+      if(rec.actions&&rec.actions.length){
+        h+='<ul style="font-size:.76rem;margin:.4rem 0 0 1rem;line-height:1.5;">';
+        rec.actions.forEach(a=>{h+='<li>'+eh(a)+'</li>';});
+        h+='</ul>';
+      }
+      h+=`<div class="rpt-meta"><span>Priority: ${eh(rec.priority||'medium')}</span><span>Timeline: ${eh(rec.timeline||'TBD')}</span><span>Est. cost: ${eh(rec.estimatedCost||'TBD')}</span></div></div>`;
+    });
+    h+='</div>';
+  }
+
+  // Funding
+  if(r.fundingOpportunities&&r.fundingOpportunities.length){
+    h+='<div class="rpt-section"><h4>Funding Opportunities</h4>';
+    r.fundingOpportunities.forEach(f=>{
+      h+=`<div class="rpt-fund"><div><strong>${eh(f.source)}</strong> <span style="color:var(--faint);font-size:.7rem;">${eh(f.type||'')}</span></div><div style="font-size:.72rem;color:var(--faint);">${eh(f.deadline||'')}</div><div style="grid-column:1/-1;font-size:.76rem;color:var(--muted);">${eh(f.relevance)}</div>${f.url?'<div style="grid-column:1/-1;"><a href="'+eh(f.url)+'" target="_blank" rel="noopener">Learn more →</a></div>':''}</div>`;
+    });
+    h+='</div>';
+  }
+
+  // Partnerships
+  if(r.partnershipOpportunities&&r.partnershipOpportunities.length){
+    h+='<div class="rpt-section"><h4>Partnership Opportunities</h4>';
+    r.partnershipOpportunities.forEach(p=>{
+      h+=`<div style="padding:.5rem 0;border-bottom:1px solid var(--rule);"><strong style="font-size:.82rem;">${eh(p.organization)}</strong> <span style="font-size:.72rem;color:var(--teal);">${eh(p.type||'')}</span><p style="font-size:.78rem;color:var(--muted);margin-top:2px;">${eh(p.synergy)}</p></div>`;
+    });
+    h+='</div>';
+  }
+
+  // Risks
+  if(r.riskAssessment&&r.riskAssessment.length){
+    h+='<div class="rpt-section"><h4>Risk Assessment</h4>';
+    r.riskAssessment.forEach(risk=>{
+      h+=`<div class="rpt-risk"><strong>${eh(risk.risk)}</strong> <span style="color:var(--faint);font-size:.7rem;">(${eh(risk.likelihood||'medium')} likelihood)</span><p style="margin-top:3px;font-size:.76rem;color:var(--muted);"><strong>Mitigation:</strong> ${eh(risk.mitigation)}</p></div>`;
+    });
+    h+='</div>';
+  }
+
+  // Metrics
+  if(r.metrics){
+    h+='<div class="rpt-section"><h4>Success Metrics</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    if(r.metrics.shortTerm&&r.metrics.shortTerm.length){
+      h+='<div><strong style="font-size:.76rem;color:var(--muted);">Short-term (3-6 months)</strong><ul style="font-size:.78rem;margin:.3rem 0 0 1rem;line-height:1.5;">';
+      r.metrics.shortTerm.forEach(m=>{h+='<li>'+eh(m)+'</li>';});
+      h+='</ul></div>';
+    }
+    if(r.metrics.longTerm&&r.metrics.longTerm.length){
+      h+='<div><strong style="font-size:.76rem;color:var(--muted);">Long-term (1-2 years)</strong><ul style="font-size:.78rem;margin:.3rem 0 0 1rem;line-height:1.5;">';
+      r.metrics.longTerm.forEach(m=>{h+='<li>'+eh(m)+'</li>';});
+      h+='</ul></div>';
+    }
+    h+='</div></div>';
+  }
+
+  // Bottom line
+  if(r.bottomLine){
+    h+=`<div class="rpt-bottom">${eh(r.bottomLine)}</div>`;
+  }
+
+  // Print button
+  h+='<div style="text-align:center;margin:1.5rem 0;"><button class="ab" onclick="window.print()" style="padding:10px 20px;"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Report</button></div>';
+
+  o.innerHTML=h;
+}
+
+// Update goHome to handle new views
+const _origGoHome=goHome;
+goHome=function(){
+  hideAllViews();
+  document.getElementById('hview').style.display='';
+  if(fromSrch)setTimeout(()=>document.getElementById('si').focus(),50);
+  window.scrollTo(0,0);
+};
 
 // Service worker registration
 if ('serviceWorker' in navigator) {
