@@ -24,6 +24,8 @@
 <link rel="canonical" href="https://solutionsthoughtsideas.com">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2a2420">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-Zcn6bjR/8RZbLEDCR/c9mnAkIzP+1iGViSNFqvbccYDQiE6Q6Kt0suVVo3m75aR+eMoyMHBnLfBezgUJqodvg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjfQbRRRpECDUQ6kszl+2EQGF9YMog==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -483,6 +485,37 @@ sup.cite:hover{color:var(--navy);text-decoration:underline;}
 }
 
 @media print{.toc,.toc-mob{display:none!important;}}
+
+/* ===== Conflict Status + Disagreement Type Badges ===== */
+.status-bar{display:flex;flex-wrap:wrap;gap:8px;margin:1rem 0 .5rem;align-items:center;}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:.74rem;font-weight:600;letter-spacing:.02em;}
+.status-badge .traj-arrow{font-size:.85rem;line-height:1;}
+.sb-active-crisis{background:rgba(192,57,43,.12);color:#c0392b;}
+:root[data-theme="dark"] .sb-active-crisis{background:rgba(192,57,43,.2);color:#e74c3c;}
+.sb-frozen-conflict{background:rgba(52,152,219,.12);color:#2980b9;}
+:root[data-theme="dark"] .sb-frozen-conflict{background:rgba(52,152,219,.2);color:#5dade2;}
+.sb-policy-deadlock{background:rgba(243,156,18,.12);color:#d4880f;}
+:root[data-theme="dark"] .sb-policy-deadlock{background:rgba(243,156,18,.2);color:#f39c12;}
+.sb-shifting-ground{background:rgba(230,126,34,.12);color:#d35400;}
+:root[data-theme="dark"] .sb-shifting-ground{background:rgba(230,126,34,.2);color:#e67e22;}
+.sb-resolution-trajectory{background:rgba(39,174,96,.12);color:#27ae60;}
+:root[data-theme="dark"] .sb-resolution-trajectory{background:rgba(39,174,96,.2);color:#2ecc71;}
+.dtype-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:500;background:var(--teal-l);color:var(--teal);letter-spacing:.01em;}
+.status-reasoning{font-size:.74rem;color:var(--muted);margin:.3rem 0 .8rem;line-height:1.45;padding-left:2px;}
+
+/* ===== Conflict Map ===== */
+.conflict-map{width:100%;height:280px;border-radius:10px;margin:1rem 0;overflow:hidden;border:1px solid var(--rule);z-index:0;}
+.conflict-map .leaflet-control-attribution{font-size:.58rem;background:rgba(255,255,255,.7)!important;}
+:root[data-theme="dark"] .conflict-map .leaflet-control-attribution{background:rgba(30,27,24,.7)!important;color:#968e83;}
+:root[data-theme="dark"] .conflict-map .leaflet-control-attribution a{color:#968e83;}
+
+/* ===== Conflict Images ===== */
+.conflict-img-section{margin:1rem 0;}
+.conflict-img-wrap{position:relative;border-radius:10px;overflow:hidden;background:var(--surf);border:1px solid var(--rule);}
+.conflict-img-wrap img{width:100%;max-height:320px;object-fit:cover;display:block;}
+.conflict-img-attr{font-size:.62rem;color:var(--faint);padding:6px 10px;line-height:1.4;}
+.conflict-img-attr a{color:var(--teal);text-decoration:none;}
+.conflict-img-attr a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -918,7 +951,7 @@ async function go(id,title,fs){
     const p=await res.json();
     if(p.error)throw new Error(p.error);
     if(p.isValidTopic===false){document.getElementById('dc').innerHTML='<div class="nc"><strong>Not a recognized conflict topic.</strong> '+eh(p.invalidReason||'Please search for a specific geopolitical conflict or policy debate.')+'</div>';return;}
-    const safe={title:p.title||title,isWedge:!!p.isWedge,intensity:p.intensity||'medium',region:p.region||'',sensitivity:p.sensitivity||null,lastVerified:p.lastVerified||'',keyDates:Array.isArray(p.keyDates)?p.keyDates:[],situation:p.situation||'',sides:Array.isArray(p.sides)?p.sides:[],importantDistinction:p.importantDistinction||'',missingVoices:p.missingVoices||'',powerBrokers:Array.isArray(p.powerBrokers)?p.powerBrokers:[],gameTheory:p.gameTheory||'',keyLeaders:Array.isArray(p.keyLeaders)?p.keyLeaders:[],resolutionPaths:Array.isArray(p.resolutionPaths)?p.resolutionPaths:[],historicalPrecedent:p.historicalPrecedent||'',sources:p.sources||[],didYouKnow:p.didYouKnow||''};
+    const safe={title:p.title||title,isWedge:!!p.isWedge,intensity:p.intensity||'medium',region:p.region||'',sensitivity:p.sensitivity||null,lastVerified:p.lastVerified||'',statusAssessment:p.statusAssessment||null,disagreementType:p.disagreementType||null,geography:p.geography||null,safeImageQuery:p.safeImageQuery||'',keyDates:Array.isArray(p.keyDates)?p.keyDates:[],situation:p.situation||'',sides:Array.isArray(p.sides)?p.sides:[],importantDistinction:p.importantDistinction||'',missingVoices:p.missingVoices||'',powerBrokers:Array.isArray(p.powerBrokers)?p.powerBrokers:[],gameTheory:p.gameTheory||'',keyLeaders:Array.isArray(p.keyLeaders)?p.keyLeaders:[],resolutionPaths:Array.isArray(p.resolutionPaths)?p.resolutionPaths:[],historicalPrecedent:p.historicalPrecedent||'',sources:p.sources||[],didYouKnow:p.didYouKnow||'',discussionGuide:p.discussionGuide||null,organizations:p.organizations||[],actions:p.actions||[],quickTake:p.quickTake||'',pullQuote:p.pullQuote||''};
     cache[ckey]=safe;renderDetail(safe,title);
     // Refresh trending in background (new search may have changed rankings)
     fetchTrending();
@@ -960,9 +993,44 @@ function renderDetail(d,st){
     }
     h+='</div>';
 
+    // Status Assessment + Disagreement Type badges
+    if(d.statusAssessment || d.disagreementType){
+      h+='<div class="status-bar">';
+      if(d.statusAssessment && d.statusAssessment.category){
+        const cat=d.statusAssessment.category;
+        const catLabels={'active-crisis':'Active Crisis','frozen-conflict':'Frozen Conflict','policy-deadlock':'Policy Deadlock','shifting-ground':'Shifting Ground','resolution-trajectory':'Resolution Trajectory'};
+        const trajArrows={'escalating':'↗','stable':'→','de-escalating':'↘'};
+        const trajLabels={'escalating':'Escalating','stable':'Stable','de-escalating':'De-escalating'};
+        h+='<span class="status-badge sb-'+eh(cat)+'">'+(catLabels[cat]||cat);
+        if(d.statusAssessment.trajectory){h+=' <span class="traj-arrow">'+(trajArrows[d.statusAssessment.trajectory]||'')+'</span> '+(trajLabels[d.statusAssessment.trajectory]||'');}
+        h+='</span>';
+      }
+      if(d.disagreementType && d.disagreementType.primary){
+        const dtLabels={'resource-allocation':'Resource Allocation','identity-values':'Identity & Values','sovereignty-territory':'Sovereignty & Territory','institutional-power':'Institutional Power','rights-freedoms':'Rights & Freedoms','security-threat':'Security Threat'};
+        h+='<span class="dtype-badge">'+(dtLabels[d.disagreementType.primary]||d.disagreementType.primary)+'</span>';
+        if(d.disagreementType.secondary){h+='<span class="dtype-badge">'+(dtLabels[d.disagreementType.secondary]||d.disagreementType.secondary)+'</span>';}
+      }
+      h+='</div>';
+      if(d.statusAssessment && d.statusAssessment.reasoning){
+        h+='<div class="status-reasoning">'+eh(d.statusAssessment.reasoning);
+        if(d.disagreementType && d.disagreementType.explanation) h+=' '+eh(d.disagreementType.explanation);
+        h+='</div>';
+      }
+    }
+
     // Content warning bar
     if(d.sensitivity){
       h+='<div class="cw-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Content filter — some sections contain sensitive material</span><button class="cw-toggle'+(cwEnabled?' on':'')+'" onclick="toggleCW()" aria-label="Toggle content filter"></button></div>';
+    }
+
+    // Conflict map
+    if(d.geography && d.geography.center && d.geography.center.length===2){
+      h+='<div class="conflict-map" id="conflict-map"></div>';
+    }
+
+    // Conflict image placeholder (fetched async after render)
+    if(d.safeImageQuery){
+      h+='<div class="conflict-img-section" id="conflict-img"></div>';
     }
 
     // Key dates timeline
@@ -1068,6 +1136,28 @@ function renderDetail(d,st){
     h+='<div class="disc">This analysis is for educational purposes only. It does not represent the views of any political party, government, or organization.</div>';
 
     dc.innerHTML=h;
+    // Initialize conflict map
+    if(d.geography && d.geography.center && d.geography.center.length===2){
+      setTimeout(()=>{
+        const mapEl=document.getElementById('conflict-map');
+        if(!mapEl || typeof L==='undefined')return;
+        try{
+          const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+          const tileUrl=isDark?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+          const attr=isDark?'&copy; <a href="https://carto.com/">CARTO</a>':'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>';
+          const map=L.map(mapEl,{scrollWheelZoom:false}).setView(d.geography.center,d.geography.zoom||5);
+          L.tileLayer(tileUrl,{attribution:attr,maxZoom:18}).addTo(map);
+          if(d.geography.markers&&d.geography.markers.length){
+            d.geography.markers.forEach(m=>{
+              if(m.lat&&m.lng){L.marker([m.lat,m.lng]).addTo(map).bindPopup('<strong>'+eh(m.name)+'</strong><br><em>'+eh(m.role||'')+'</em>');}
+            });
+          }
+          window._conflictMap=map;
+        }catch(e){console.log('Map init error:',e);}
+      },100);
+    }
+    // Fetch Wikimedia image
+    if(d.safeImageQuery){fetchWikimediaImage(d.safeImageQuery);}
     // Initialize TOC after rendering
     setTimeout(()=>initTOC(),50);
     // Fetch live news
@@ -1456,6 +1546,43 @@ fetchFeatured(); // Load featured topics on startup
 fetchTrending(); // Load trending topics on startup
 
 // Live news fetcher
+// Wikimedia Commons image fetcher with content safety filter
+const IMG_BLOCKED_CATS=/casualt|dead bod|graphic|gore|nsfw|execution|massacre|torture|wound|injur|autopsy|crime scene/i;
+async function fetchWikimediaImage(query){
+  const container=document.getElementById('conflict-img');
+  if(!container)return;
+  try{
+    const url='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(query)+'&gsrlimit=5&gsrnamespace=6&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=800&format=json&origin=*';
+    const res=await fetch(url);
+    if(!res.ok)return;
+    const data=await res.json();
+    if(!data.query||!data.query.pages)return;
+    const pages=Object.values(data.query.pages);
+    for(const page of pages){
+      if(!page.imageinfo||!page.imageinfo[0])continue;
+      const info=page.imageinfo[0];
+      const meta=info.extmetadata||{};
+      // Content safety filter: check categories
+      const cats=(meta.Categories?meta.Categories.value:'')||'';
+      if(IMG_BLOCKED_CATS.test(cats))continue;
+      // License check
+      const license=(meta.LicenseShortName?meta.LicenseShortName.value:'')||'';
+      if(!license)continue;
+      const okLicense=/cc|public domain|pd|gfdl/i.test(license);
+      if(!okLicense)continue;
+      // We have a safe, licensed image
+      const thumbUrl=info.thumburl||info.url;
+      const title=(meta.ObjectName?meta.ObjectName.value:page.title.replace('File:',''))||'Image';
+      const artist=(meta.Artist?meta.Artist.value.replace(/<[^>]+>/g,''):'Unknown').slice(0,80);
+      const descUrl=info.descriptionurl||'';
+      container.innerHTML='<div class="conflict-img-wrap"><img src="'+eh(thumbUrl)+'" alt="'+eh(title)+'" loading="lazy"><div class="conflict-img-attr">'+eh(title)+' by '+eh(artist)+' · '+eh(license)+(descUrl?' · <a href="'+eh(descUrl)+'" target="_blank" rel="noopener">Wikimedia Commons</a>':'')+'</div></div>';
+      return;
+    }
+    // No safe image found — just hide the section
+    container.remove();
+  }catch(e){container.remove();}
+}
+
 async function fetchNews(topic) {
   const feed = document.getElementById('news-feed');
   if(!feed) return;
